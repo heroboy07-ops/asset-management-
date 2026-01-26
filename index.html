@@ -4,524 +4,170 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>자산 관리 시스템</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+<body>
   <div id="root"></div>
-  
-  <script>
-    let assets = [];
-    let fileUploaded = false;
-    let searchMode = 'quick';
-    let quickSearch = '';
-    let selectedEquipment = '';
-    let selectedLocation = '';
-    let selectedAssetNumber = '';
+  <script type="text/babel">
+    const { useState } = React;
 
-    const equipmentList = ['청력기', '중이기기', '소음계', '원심분리기', '폐활량', '실린지', 'HRV', 'EKG', '업무용노트북', '와이브로', '청력부스', '프린터기'];
-    const locationList = ['수원', '아산1', '평택', '사무실'];
+    function App() {
+      const [assets, setAssets] = useState([]);
+      const [fileUploaded, setFileUploaded] = useState(false);
+      const [searchMode, setSearchMode] = useState('quick');
+      const [quickSearch, setQuickSearch] = useState('');
+      const [selectedEquipment, setSelectedEquipment] = useState('');
+      const [selectedLocation, setSelectedLocation] = useState('');
+      const [selectedAssetNumber, setSelectedAssetNumber] = useState('');
 
-    function handleFileUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
+      const equipmentList = ['청력기', '중이기기', '소음계', '원심분리기', '폐활량', '실린지', 'HRV', 'EKG', '업무용노트북', '와이브로', '청력부스', '프린터기'];
+      const locationList = ['수원', '아산1', '평택', '사무실'];
 
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          
-          assets = [];
+      const handleFileUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
 
-          workbook.SheetNames.forEach(function(sheetName) {
-            const worksheet = workbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
             
-            if (jsonData.length < 2) return;
+            const allAssetsTemp = [];
 
-            const headers = jsonData[0];
-            const dateColumns = [];
-            
-            for (let h = 0; h < headers.length; h++) {
-              if (headers[h] && String(headers[h]).match(/^\d{2}-\d{2}$/)) {
-                dateColumns.push({ index: h, date: String(headers[h]) });
-              }
-            }
+            workbook.SheetNames.forEach(sheetName => {
+              const worksheet = workbook.Sheets[sheetName];
+              const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+              
+              if (jsonData.length < 2) return;
 
-            for (let i = 1; i < jsonData.length; i++) {
-              const row = jsonData[i];
-              if (!row || !row[4]) continue;
-
-              const notes = {};
-              for (let d = 0; d < dateColumns.length; d++) {
-                if (row[dateColumns[d].index] && String(row[dateColumns[d].index]).trim()) {
-                  notes[dateColumns[d].date] = String(row[dateColumns[d].index]).trim();
+              const headers = jsonData[0];
+              const dateColumns = [];
+              
+              headers.forEach((header, index) => {
+                if (header && String(header).match(/^\d{2}-\d{2}$/)) {
+                  dateColumns.push({ index, date: String(header) });
                 }
-              }
-
-              const locationFull = row[5] ? String(row[5]) : '';
-              let location = '';
-              if (locationFull.includes('수원')) location = '수원';
-              else if (locationFull.includes('아산')) location = '아산1';
-              else if (locationFull.includes('평택')) location = '평택';
-              else if (locationFull.includes('사무실')) location = '사무실';
-
-              assets.push({
-                equipment: sheetName,
-                no: row[0] ? String(row[0]) : '',
-                name: row[1] ? String(row[1]) : '',
-                model: row[2] ? String(row[2]) : '',
-                serial: row[3] ? String(row[3]) : '',
-                assetNumber: row[4] ? String(row[4]) : '',
-                location: location,
-                locationFull: locationFull,
-                notes: notes
               });
-            }
-          });
 
-          fileUploaded = true;
-          render();
-        } catch (err) {
-          alert('파일 오류: ' + err.message);
-        }
+              for (let i = 1; i < jsonData.length; i++) {
+                const row = jsonData[i];
+                if (!row || !row[4]) continue;
+
+                const notes = {};
+                dateColumns.forEach(({ index, date }) => {
+                  if (row[index] && String(row[index]).trim()) {
+                    notes[date] = String(row[index]).trim();
+                  }
+                });
+
+                const locationFull = row[5] ? String(row[5]) : '';
+                let location = '';
+                if (locationFull.includes('수원')) location = '수원';
+                else if (locationFull.includes('아산')) location = '아산1';
+                else if (locationFull.includes('평택')) location = '평택';
+                else if (locationFull.includes('사무실')) location = '사무실';
+
+                allAssetsTemp.push({
+                  equipment: sheetName,
+                  name: row[1] ? String(row[1]) : '',
+                  model: row[2] ? String(row[2]) : '',
+                  serial: row[3] ? String(row[3]) : '',
+                  assetNumber: row[4] ? String(row[4]) : '',
+                  location: location,
+                  locationFull: locationFull,
+                  notes: notes
+                });
+              }
+            });
+
+            setAssets(allAssetsTemp);
+            setFileUploaded(true);
+          } catch (err) {
+            alert('파일 오류: ' + err.message);
+          }
+        };
+        reader.readAsArrayBuffer(file);
       };
-      reader.readAsArrayBuffer(file);
-    }
 
-    function getAssetsByEquipment() {
-      return assets.filter(function(a) { return a.equipment === selectedEquipment; });
-    }
+      const getAssetsByEquipment = () => assets.filter(a => a.equipment === selectedEquipment);
+      const getEquipmentsByLocation = () => {
+        const eqs = new Set();
+        assets.filter(a => a.location === selectedLocation).forEach(a => eqs.add(a.equipment));
+        return Array.from(eqs).filter(eq => equipmentList.includes(eq));
+      };
+      const getAssetsByLocationAndEquipment = () => assets.filter(a => a.location === selectedLocation && a.equipment === selectedEquipment);
+      const getQuickSearchResult = () => quickSearch.trim() ? assets.find(a => a.assetNumber.includes(quickSearch.trim())) : null;
+      const getAllAssetsWithNotes = () => assets.filter(a => Object.keys(a.notes).length > 0);
+      const getCurrentAsset = () => searchMode === 'quick' ? getQuickSearchResult() : assets.find(a => a.assetNumber === selectedAssetNumber);
 
-    function getEquipmentsByLocation() {
-      const eqs = {};
-      assets.forEach(function(a) {
-        if (a.location === selectedLocation) eqs[a.equipment] = true;
-      });
-      return Object.keys(eqs).filter(function(eq) { return equipmentList.indexOf(eq) !== -1; });
-    }
-
-    function getAssetsByLocationAndEquipment() {
-      return assets.filter(function(a) { 
-        return a.location === selectedLocation && a.equipment === selectedEquipment; 
-      });
-    }
-
-    function getQuickSearchResult() {
-      if (!quickSearch.trim()) return null;
-      for (let i = 0; i < assets.length; i++) {
-        if (assets[i].assetNumber.includes(quickSearch.trim())) {
-          return assets[i];
-        }
-      }
-      return null;
-    }
-
-    function getAllAssetsWithNotes() {
-      return assets.filter(function(a) { return Object.keys(a.notes).length > 0; });
-    }
-
-    function getCurrentAsset() {
-      if (searchMode === 'quick') {
-        return getQuickSearchResult();
-      }
-      for (let i = 0; i < assets.length; i++) {
-        if (assets[i].assetNumber === selectedAssetNumber) {
-          return assets[i];
-        }
-      }
-      return null;
-    }
-
-    function resetSelections() {
-      selectedEquipment = '';
-      selectedLocation = '';
-      selectedAssetNumber = '';
-      quickSearch = '';
-    }
-
-    function setSearchMode(mode) {
-      searchMode = mode;
-      resetSelections();
-      render();
-    }
-
-    function render() {
-      const root = document.getElementById('root');
+      const resetSelections = () => {
+        setSelectedEquipment('');
+        setSelectedLocation('');
+        setSelectedAssetNumber('');
+        setQuickSearch('');
+      };
 
       if (!fileUploaded) {
-        root.innerHTML = '<div class="min-h-screen flex items-center justify-center p-4"><div class="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full"><div class="text-center mb-6"><svg class="w-16 h-16 mx-auto mb-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg><h1 class="text-2xl font-bold text-gray-800 mb-2">자산 관리</h1><p class="text-gray-600">파일 업로드</p></div><label class="block"><input type="file" id="fileInput" accept=".xlsx,.xls" class="hidden"><div class="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50"><svg class="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg><p class="text-gray-700 font-medium">파일 선택</p></div></label></div></div>';
-        document.getElementById('fileInput').addEventListener('change', handleFileUpload);
-        return;
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+              <div className="text-center mb-6">
+                <h1 className="text-2xl font-bold text-gray-800 mb-2">자산 관리</h1>
+                <p className="text-gray-600">파일 업로드</p>
+              </div>
+              <label className="block">
+                <input type="file" accept=".xlsx,.xls" onChange={handleFileUpload} className="hidden" />
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50">
+                  <p className="text-gray-700 font-medium">파일 선택</p>
+                </div>
+              </label>
+            </div>
+          </div>
+        );
       }
 
-      let html = '<div class="p-3 max-w-4xl mx-auto">';
-      html += '<div class="bg-white rounded-xl shadow-lg p-4 mb-3"><div class="flex items-center justify-between"><h1 class="text-xl font-bold text-gray-800">자산 관리</h1><button onclick="location.reload()" class="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm">재업로드</button></div></div>';
-      
-      html += '<div class="bg-white rounded-xl shadow-lg p-4 mb-3"><div class="grid grid-cols-4 gap-2 mb-4">';
-      html += '<button onclick="setSearchMode(\'quick\')" class="py-3 rounded-lg font-medium text-xs ' + (searchMode === 'quick' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700') + '">빠른검색</button>';
-      html += '<button onclick="setSearchMode(\'equipment\')" class="py-3 rounded-lg font-medium text-xs ' + (searchMode === 'equipment' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700') + '">장비</button>';
-      html += '<button onclick="setSearchMode(\'location\')" class="py-3 rounded-lg font-medium text-xs ' + (searchMode === 'location' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700') + '">장소</button>';
-      html += '<button onclick="setSearchMode(\'allnotes\')" class="py-3 rounded-lg font-medium text-xs ' + (searchMode === 'allnotes' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700') + '">특이사항</button>';
-      html += '</div>';
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-3">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-xl shadow-lg p-4 mb-3">
+              <div className="flex items-center justify-between">
+                <h1 className="text-xl font-bold text-gray-800">자산 관리</h1>
+                <button onClick={() => window.location.reload()} className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm">재업로드</button>
+              </div>
+            </div>
 
-      if (searchMode === 'quick') {
-        html += '<div><label class="block text-sm font-bold text-gray-700 mb-2">자산번호 입력 (QR 스캔)</label><input type="text" id="quickSearchInput" placeholder="자산번호 입력 또는 QR 스캔" class="w-full px-4 py-4 border-2 border-gray-300 rounded-lg text-lg"><p class="text-xs text-gray-500 mt-2">* QR 스캔기로 자산번호를 스캔하면 자동으로 입력됩니다</p></div>';
-      } else if (searchMode === 'equipment') {
-        html += '<div class="space-y-3"><div><label class="block text-sm font-bold text-gray-700 mb-2">장비 선택</label><select id="equipmentSelect" class="w-full px-3 py-3 border-2 border-gray-300 rounded-lg text-base"><option value="">선택하세요</option>';
-        equipmentList.forEach(function(eq) {
-          html += '<option value="' + eq + '">' + eq + '</option>';
-        });
-        html += '</select></div>';
-        if (selectedEquipment) {
-          html += '<div><label class="block text-sm font-bold text-gray-700 mb-2">자산번호</label><select id="assetSelect" class="w-full px-3 py-3 border-2 border-gray-300 rounded-lg text-base"><option value="">선택하세요</option>';
-          getAssetsByEquipment().forEach(function(a) {
-            html += '<option value="' + a.assetNumber + '">' + a.assetNumber + '</option>';
-          });
-          html += '</select></div>';
-        }
-        html += '</div>';
-      } else if (searchMode === 'location') {
-        html += '<div class="space-y-3"><div><label class="block text-sm font-bold text-gray-700 mb-2">장소 선택</label><select id="locationSelect" class="w-full px-3 py-3 border-2 border-gray-300 rounded-lg text-base"><option value="">선택하세요</option>';
-        locationList.forEach(function(loc) {
-          html += '<option value="' + loc + '">' + loc + '</option>';
-        });
-        html += '</select></div>';
-        if (selectedLocation && getEquipmentsByLocation().length > 0) {
-          html += '<div><label class="block text-sm font-bold text-gray-700 mb-2">장비 선택</label><select id="equipmentSelect" class="w-full px-3 py-3 border-2 border-gray-300 rounded-lg text-base"><option value="">선택하세요</option>';
-          getEquipmentsByLocation().forEach(function(eq) {
-            html += '<option value="' + eq + '">' + eq + '</option>';
-          });
-          html += '</select></div>';
-        }
-        if (selectedLocation && selectedEquipment) {
-          html += '<div><label class="block text-sm font-bold text-gray-700 mb-2">자산번호</label><select id="assetSelect" class="w-full px-3 py-3 border-2 border-gray-300 rounded-lg text-base"><option value="">선택하세요</option>';
-          getAssetsByLocationAndEquipment().forEach(function(a) {
-            html += '<option value="' + a.assetNumber + '">' + a.assetNumber + '</option>';
-          });
-          html += '</select></div>';
-        }
-        html += '</div>';
-      }
+            <div className="bg-white rounded-xl shadow-lg p-4 mb-3">
+              <div className="grid grid-cols-4 gap-2 mb-4">
+                <button onClick={() => { setSearchMode('quick'); resetSelections(); }} className={`py-3 rounded-lg font-medium text-xs ${searchMode === 'quick' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}>빠른검색</button>
+                <button onClick={() => { setSearchMode('equipment'); resetSelections(); }} className={`py-3 rounded-lg font-medium text-xs ${searchMode === 'equipment' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}>장비</button>
+                <button onClick={() => { setSearchMode('location'); resetSelections(); }} className={`py-3 rounded-lg font-medium text-xs ${searchMode === 'location' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700'}`}>장소</button>
+                <button onClick={() => { setSearchMode('allnotes'); resetSelections(); }} className={`py-3 rounded-lg font-medium text-xs ${searchMode === 'allnotes' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700'}`}>특이사항</button>
+              </div>
 
-      html += '</div>';
+              {searchMode === 'quick' && (
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">자산번호 입력 (QR 스캔)</label>
+                  <input type="text" value={quickSearch} onChange={(e) => setQuickSearch(e.target.value)} placeholder="자산번호 입력" className="w-full px-4 py-4 border-2 border-gray-300 rounded-lg text-lg" autoFocus />
+                </div>
+              )}
 
-      html += '<div class="bg-white rounded-xl shadow-lg p-4">';
-      
-      if (searchMode === 'allnotes') {
-        const assetsWithNotes = getAllAssetsWithNotes();
-        html += '<h2 class="text-lg font-bold text-gray-800 mb-3">특이사항 있는 장비 (' + assetsWithNotes.length + '개)</h2>';
-        if (assetsWithNotes.length === 0) {
-          html += '<p class="text-center py-8 text-gray-500">특이사항 없음</p>';
-        } else {
-          html += '<div class="space-y-3">';
-          assetsWithNotes.forEach(function(asset) {
-            const noteCount = Object.keys(asset.notes).length;
-            html += '<div class="border-2 border-gray-200 rounded-lg p-3"><div class="flex items-center gap-2 mb-2"><span class="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-bold">' + asset.equipment + '</span><span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-bold">' + noteCount + '건</span></div><p class="font-bold text-sm mb-1">' + asset.assetNumber + '</p><p class="text-xs text-gray-600 mb-2">' + asset.name + '</p><div class="bg-yellow-50 border border-yellow-300 rounded p-2 text-xs space-y-1">';
-            const noteEntries = Object.entries(asset.notes);
-            for (let n = 0; n < Math.min(3, noteEntries.length); n++) {
-              const date = noteEntries[n][0];
-              const note = noteEntries[n][1];
-              html += '<div><span class="font-bold">' + date + ':</span> ' + note.substring(0, 50) + (note.length > 50 ? '...' : '') + '</div>';
-            }
-            if (noteEntries.length > 3) {
-              html += '<p class="text-gray-500 italic">외 ' + (noteEntries.length - 3) + '건 더...</p>';
-            }
-            html += '</div></div>';
-          });
-          html += '</div>';
-        }
-      } else {
-        html += '<h2 class="text-lg font-bold text-gray-800 mb-3">장비 정보</h2>';
-        const currentAsset = getCurrentAsset();
-        if (currentAsset) {
-          html += '<div class="border-2 border-indigo-300 rounded-lg p-4"><div class="mb-2"><span class="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-bold">' + currentAsset.equipment + '</span></div>';
-          html += '<div class="space-y-2 mb-3">';
-          html += '<div><p class="text-xs text-gray-500">자산번호</p><p class="font-bold text-lg">' + currentAsset.assetNumber + '</p></div>';
-          html += '<div><p class="text-xs text-gray-500">기기명</p><p class="text-sm">' + currentAsset.name + '</p></div>';
-          html += '<div><p class="text-xs text-gray-500">모델</p><p class="text-sm">' + currentAsset.model + '</p></div>';
-          html += '<div><p class="text-xs text-gray-500">제조번호</p><p class="text-sm">' + currentAsset.serial + '</p></div>';
-          html += '</div>';
-          if (currentAsset.locationFull) {
-            html += '<div class="bg-green-50 border border-green-300 rounded p-2 mb-3"><p class="text-xs text-gray-500 mb-1">위치</p><p class="text-sm font-bold">' + currentAsset.locationFull + '</p></div>';
-          }
-          if (Object.keys(currentAsset.notes).length > 0) {
-            html += '<div class="bg-yellow-50 border border-yellow-300 rounded p-3"><p class="text-sm font-bold mb-2">특이사항 (' + Object.keys(currentAsset.notes).length + '건)</p><div class="space-y-2 text-xs max-h-60 overflow-y-auto">';
-            Object.entries(currentAsset.notes).forEach(function(entry) {
-              html += '<div class="pb-2 border-b border-yellow-200"><p class="font-bold text-orange-700">' + entry[0] + '</p><p class="text-gray-700">' + entry[1] + '</p></div>';
-            });
-            html += '</div></div>';
-          } else {
-            html += '<p class="text-center py-4 text-gray-400 text-sm">특이사항 없음</p>';
-          }
-          html += '</div>';
-        } else {
-          html += '<p class="text-center py-8 text-gray-500">' + (searchMode === 'quick' ? '자산번호를 입력하세요' : '장비를 선택하세요') + '</p>';
-        }
-      }
-
-      html += '</div></div>';
-      root.innerHTML = html;
-
-      if (searchMode === 'quick') {
-        const input = document.getElementById('quickSearchInput');
-        if (input) {
-          input.value = quickSearch;
-          input.addEventListener('input', function(e) {
-            quickSearch = e.target.value;
-            render();
-          });
-          input.focus();
-        }
-      } else if (searchMode === 'equipment') {
-        const eqSelect = document.getElementById('equipmentSelect');
-        if (eqSelect) {
-          eqSelect.value = selectedEquipment;
-          eqSelect.addEventListener('change', function(e) {
-            selectedEquipment = e.target.value;
-            selectedAssetNumber = '';
-            render();
-          });
-        }
-        const assetSelect = document.getElementById('assetSelect');
-        if (assetSelect) {
-          assetSelect.value = selectedAssetNumber;
-          assetSelect.addEventListener('change', function(e) {
-            selectedAssetNumber = e.target.value;
-            render();
-          });
-        }
-      } else if (searchMode === 'location') {
-        const locSelect = document.getElementById('locationSelect');
-        if (locSelect) {
-          locSelect.value = selectedLocation;
-          locSelect.addEventListener('change', function(e) {
-            selectedLocation = e.target.value;
-            selectedEquipment = '';
-            selectedAssetNumber = '';
-            render();
-          });
-        }
-        const eqSelect = document.getElementById('equipmentSelect');
-        if (eqSelect) {
-          eqSelect.value = selectedEquipment;
-          eqSelect.addEventListener('change', function(e) {
-            selectedEquipment = e.target.value;
-            selectedAssetNumber = '';
-            render();
-          });
-        }
-        const assetSelect = document.getElementById('assetSelect');
-        if (assetSelect) {
-          assetSelect.value = selectedAssetNumber;
-          assetSelect.addEventListener('change', function(e) {
-            selectedAssetNumber = e.target.value;
-            render();
-          });
-        }
-      }
-    }
-
-    render();
-  </script>
-</body>
-</html>const START_DATA_ROW = 2;
-
-function onFormSubmit(e) {
-  if (!e || !e.namedValues) return;
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = e.range.getSheet();
-  const sheetName = sheet.getName();
-  const timeZone = ss.getSpreadsheetTimeZone();
-
-  const timestampValue = e.namedValues["타임스탬프"]?.[0];
-  const date = getKSTDate(timestampValue, timeZone);
-  const dayColumn = getDayColumn(date);
-
-  // ---------------------------------------------------------
-  // 🚀 [7번 폼] 위치 기록(수령/반납/보유) 및 팀 시트 이동
-  // ---------------------------------------------------------
-  if (sheetName.includes("7")) {
-    const assetNumber = String(e.namedValues["자산번호"]?.[0] || "").trim();
-    const action = e.namedValues["수령/반납 선택"]?.[0]?.trim();
-    const team = e.namedValues["팀 선택"]?.[0]?.trim();
-    const returnReason = e.namedValues["반납사유"]?.[0]?.trim();
-
-    // 1. 원본 시트에서 자산 찾기 (E열 기준)
-    const assetInfo = findAssetRow(assetNumber, ss);
-    if (!assetInfo.sheet || !assetInfo.row) return;
-
-    // 2. [기록] 날짜 칸에 "XX팀 수령/반납/보유" 누적 입력
-    const finalPosition = writeAssetRecord(assetInfo.sheet, assetInfo.row, dayColumn, team, action, returnReason);
-
-    // 3. [이동] 원본 B,C,D,E열 -> 팀 시트 A,B,C,D열로 복사
-    if (finalPosition) {
-      deleteFromAllTeamSheets(assetNumber, ss); // 기존 팀 시트에서 삭제
-      
-      if (action === "수령" || action === "보유" || (action === "반납" && (finalPosition === '사무실' || finalPosition === '의공실'))) {
-        // 원본 B,C,D,E (2,3,4,5열) -> 팀 시트 A,B,C,D (1,2,3,4열)
-        const sourceData = assetInfo.sheet.getRange(assetInfo.row, 2, 1, 4).getValues(); 
-        const targetSh = ss.getSheetByName(finalPosition);
-        if (targetSh) {
-          targetSh.appendRow(sourceData[0]);
-        }
-      }
-    }
-  }
-
-  // ---------------------------------------------------------
-  // 🚀 [9번 폼] 팀 시트 관리자(E열) 및 특이사항(날짜열)
-  // ---------------------------------------------------------
-  else if (sheetName.includes("9")) {
-    const v = e.values;
-    const manager = String(v[1] || "").trim();
-    const team = String(v[2] || "").trim();
-    const info = extract9(v);
-    const targetSh = ss.getSheetByName(team);
-
-    if (targetSh && info.id) {
-      const data = targetSh.getRange("D:D").getValues(); // 팀 시트 D열(자산번호)
-      for (let i = 0; i < data.length; i++) {
-        if (String(data[i][0]).trim() === info.id) {
-          targetSh.getRange(i + 1, 5).setValue(manager); // E열 관리자
-          if (info.note) {
-            const cell = targetSh.getRange(i + 1, dayColumn);
-            const exist = cell.getValue();
-            cell.setValue(exist ? exist + ", " + info.note : info.note);
-            targetSh.setColumnWidth(dayColumn, 500); // 열너비 500
-          }
-          break;
-        }
-      }
-    }
-  }
-}
-
-// --- 보조 함수 (형님 요구사항 정밀 반영) ---
-
-function writeAssetRecord(sheet, row, dayColumn, team, action, reason) {
-  let dayValue = "";
-  let currentPos = team;
-
-  if (action === "수령") {
-    dayValue = team + " 수령";
-  } else if (action === "반납") {
-    dayValue = team + " 반납" + (reason ? " (" + reason + ")" : "");
-    currentPos = (reason?.trim() === "의공실") ? "의공실" : "사무실";
-  } else if (action === "보유") {
-    dayValue = team + " 보유";
-  }
-
-  // 날짜 칸 기록 누적
-  const cell = sheet.getRange(row, dayColumn);
-  const exist = cell.getValue();
-  cell.setValue(exist ? exist + ", " + dayValue : dayValue);
-  
-  // F열(6번 열) 현재위치 업데이트
-  sheet.getRange(row, 6).setValue(currentPos);
-  return currentPos;
-}
-
-function findAssetRow(assetNumber, ss) {
-  const sheets = ss.getSheets();
-  const searchKey = assetNumber.toLowerCase();
-  for (let sh of sheets) {
-    if (sh.getName().includes("응답") || sh.getName().includes("팀")) continue;
-    const lastRow = sh.getLastRow();
-    if (lastRow < 2) continue;
-    const values = sh.getRange(2, 5, lastRow - 1, 1).getValues(); // 원본 E열 자산번호
-    for (let r = 0; r < values.length; r++) {
-      if (String(values[r][0]).toLowerCase().trim() === searchKey) return {sheet: sh, row: r + 2};
-    }
-  }
-  return {sheet: null, row: null};
-}
-
-function deleteFromAllTeamSheets(assetNumber, ss) {
-  const teams = ['1팀','2팀','3팀','4팀','5팀','6팀','사무실','의공실'];
-  teams.forEach(name => {
-    const sh = ss.getSheetByName(name);
-    if (!sh) return;
-    const data = sh.getRange("D:D").getValues();
-    for (let i = data.length - 1; i >= 0; i--) {
-      if (String(data[i][0]).trim() === assetNumber) sh.deleteRow(i + 1);
-    }
-  });
-}
-
-function extract9(v) {
-  const t = v[3] || "";
-  let res = {id: "", note: ""};
-  if(t.includes("HRV")) { res.id = v[4]; res.note = v[5]; }
-  else if(t.includes("EKG")) { res.id = v[6]; res.note = v[7]; }
-  else if(t.includes("원심")) { res.id = v[8]; res.note = v[9]; }
-  else if(t.includes("폐활량")) { res.id = v[10]; res.note = v[11]; }
-  else if(t.includes("소음")) { res.id = v[12]; res.note = v[13]; }
-  else if(t.includes("청력")) { 
-    res.id = v[14]; 
-    res.note = "헤드셋:" + v[14] + "/" + v[15] + " (" + (v[16] || "특이사항 없음") + ")"; 
-  }
-  else if(t.includes("중이")) { res.id = v[17]; res.note = v[18]; }
-  if (!res.note || res.note.trim() === "") res.note = "특이사항 없음";
-  return res;
-}
-
-function getKSTDate(timestampValue, timeZone) {
-  try {
-    const cleaned = timestampValue.replace(/\./g, '/').replace(/오전/g, 'AM').replace(/오후/g, 'PM').trim();
-    const match = cleaned.match(/(\d{4})\/\s*(\d{1,2})\/\s*(\d{1,2})\s*(AM|PM)?\s*(\d{1,2}):(\d{1,2}):(\d{1,2})/i);
-    let subDate = match ? new Date(parseInt(match[1]), parseInt(match[2])-1, parseInt(match[3]), (match[4]==='PM'&&parseInt(match[5])<12?parseInt(match[5])+12:(match[4]==='AM'&&parseInt(match[5])===12?0:parseInt(match[5]))), parseInt(match[6]), parseInt(match[7])) : new Date(timestampValue);
-    const y = parseInt(Utilities.formatDate(subDate, timeZone, "yyyy"), 10);
-    const m = parseInt(Utilities.formatDate(subDate, timeZone, "MM"), 10) - 1;
-    const d = parseInt(Utilities.formatDate(subDate, timeZone, "dd"), 10);
-    return new Date(Date.UTC(y, m, d, 0, 0, 0));
-  } catch(e) { return null; }
-}
-
-function getDayColumn(date) {
-  const start = new Date(Date.UTC(2025, 0, 1, 0, 0, 0));
-  const diff = Math.round((date.getTime() - start.getTime()) / 86400000);
-  return 7 + diff;
-} 기존께 이거야 이거에 시트명은 아까 말했듯이 기존에 청력기, 중이기기, 소음계,원심분리기, 폐활량, HRV,EKG외에 추가로 1팀,2팀 3팀,4팀,5팀,6팀, 사무실, 의공실 시트가 되어있어. 새로만든 1팀,2팀 3팀,4팀,5팀,6팀, 사무실, 의공실 시트는 a1기기명 b1모델 c1제조번호 d1자산번호 e1관리자 f1 01/01 g1 01/02 h 01/03 .....NE1 12/30 NF12/31 이렇게 시트가 되어있어. 기존에 있던 시트 청력기, 중이기기, 소음계,원심분리기, 폐활량, HRV,EKG는 a1기기명 b1모델 c1제조번호 d1자산번호 e1관리자 현재위치 f1 01/01 g1 01/02 h 01/03 .....NE1 12/30 NF12/31 이렇게 되어있고. 첫번쨰 구글폼은 설문지 응답 시트7 로 a타임스탬프b자산번호c팀 선택d수령/반납 e선택반납사유 두번쨰 구글폼은 모르겠어, 아직 근대 지금 당장 새롭게 만든 시트 1팀,2팀 3팀,4팀,5팀,6팀, 사무실, 의공실 시트는 첫번쨰 구글폼으로 각 장비의 현재 위치를 기준으로 각시트로 a1기기명 b1모델 c1제조번호 d1자산번호 이부분이 넘어가야돼. ex) 첫번쨰 구글폼으로 자산번호 큐알을 찍어서 50401-00143 1팀 수령 하면 현재 위치가 1팀이니까 , a1기기명 b1모델 c1제조번호 d1자산번호 이부분은 1팀 시트로 넘어가고 . 두번쨰 시트의 큐알은 관리자가 될꺼야. 그래서 큐알은 관리자이름이 자동으로 들어가게 할꺼고, 그럼 a1기기명 b1모델 c1제조번호 d1자산번호 e1관리자 이부분이 자동으로 채워지자나. 여기서 이제 f1 01/01 g1 01/02 h 01/03 .....NE1 12/30 NF12/31 이부분에 채워져야되는데 이부분은 특이사항으로 채워질꺼야, f1 01/01 g1 01/02 h 01/03 .....NE1 12/30 NF12/31 의 열 크기는 500으로 해주고 구글폼 2의 특이사항 내용을 적어주면돼. 예를 들어 50604-00143 을 선택하고 선고장 이러면 오늘날짜 (제출날짜) 에 맞춰 특이사항이 적혀야돼
-
-두번쨰 구글폼 관리자 (김민철,김민선,김태용,안혜진,김민지,김성현,백수빈,조해영) ,팀 (1팀,2팀,3팀,4팀,5팀,6팀,사무실,의공실) ,  장비 (청력기,중이기기,소음계,원심분리기,폐활량,HRV,EKG)가 있어, 팀 - 관리자 - 장비 선택후 
-
-청력기를 선택하면 7섹션으로 이동하게 하여 7섹션 질문이 처음에 헤드셋이 설정되야돼. 이게 서로 맞는 헤드셋이 설정되야되서 헤드셋 (WT109429/WT109430,WT109528/WT109536,WT305446/WT305444,WT402572/WT402584,WT402783/WT402588,WT402782/WT402781,WT482942/WT482966,WT476053/WT498521,WT565596/WT558124,WT550841/WT567270)에서  선택해주고
-
-그 다음 선택 사항 보기가 (전원선 분실,기도 Y 코드선 파손,레스펀스 버튼 파손,부스 연결선 분실,일자 드라이버 or 육각렌치  분실,골도 헤드셋 분실 및 파손 ,특이사항 없음) 을 선택하여 제출이야
-
-만약 팀-관리자-청력기 - 헤드셋을 설정하고 사유중에 골도 헤드셋 분실 및 파손을 선택하면, 그 팀의 시트에 나타나게 되는거야.그래서 a1기기명 b1모델 c1제조번호 d1자산번호 e1관리자 f1 특이사항에  해당날짜에 (골도 헤드셋 분실 및 파손 ,특이사항 없음) 이렇게 특이사항이 남도록해줘야돼
-
-중이기기는 섹션 8로 이동하여 중이기기 ( 50604-00155,50604-00156,50604-00185,50604-00186,50604-00187,50604-00216,50604-00217)을 선택하고 특이사항 (전원선 분실,청소용 실 분실,프린트 용지 부족,특이사항 없음)가 구조야
-
-소음계는 섹션 6으로 이동하여 소음계 (70199-00231,70199-00232,70199-00233,70199-00234,70199-00235,70199-00236,70199-00237)특이사항(전원선 분실,특이사항 없음)
-
-원심분리기는 섹션4로 이동하여 원심분리기 (50209-00347,50209-00365,50209-00366,50209-00367,50209-00368,50209-00369,50209-00403,50209-00442,50209-00443,50209-00444) 특이사항(전원선 분실,뚜껑 개폐오류,특이사항 없음)
-
-폐활량는 섹션5로 이동하여 폐활량(50601-00770,50601-00771,50601-00772,50601-00773,50601-00774,50601-00775,50601-00776,50601-00822,50601-00823,50601-00863,50601-00864,50601-00871,50601-00872,50601-00873,50601-00949,50601-00950,50601-00951,50601-00964,50601-00965,50601-00966,50601-00967,50601-00968,50601-00969,50601-01533,50601-01534,50601-01535,50601-01536,50601-01537,50601-01538,50601-01539) 특이사항(전원선 분실,마우스 분실,노트북 파손,플로우 헤드 파손,특이사항 없음)
-
-HRV는 섹션2로 이동하여 HRV(50609-01184,50609-01185,50609-01186,50609-01187,50609-01188,50609-01189,50609-01190,50609-01282,50609-01283,50609-01284,50609-01285,50609-01286,50609-01437,50609-01438,50609-01439,50609-01440,50609-01441,50609-01559,50609-01560,50609-01561,50609-01562,50609-01563,50609-01564,50609-01565,50609-01566,50609-01567,50609-01568,50609-01569,50609-01570,50609-01571,50609-01628,50609-01629,50609-01630,50609-01631,50609-01632)고 특이사항 (액정파손,화면 안켜진,키보드 분실,마우스 분실,전원선 분실,허브 분실,팔다리 유도선 파손,접지 전극 파손,특이사항 없음)
-
-하나하나 말해줄께 개 잡종새끼야, 7번 큐알을찍어, 그럼 현재 위치 (XX팀) 오늘 날짜 XX팀 보유,XX팀 반납,XX팀 보유 이렇게 떠야 되는데 너가 만든 좆같은 코드떔에 자산번호가 사라지고 오늘 날짜에 XX팀 이렇게만 떠서 몇번 쳐말해도 이렇게 계속 보내내?개 시발 애미 창녀새끼야. 그리고 9번 폼을 입력하면 팀시트에 그럼 a1기기명 b1모델 c1제조번호 d1자산번호 e1관리자 이순으로 되어있고, E1에 관리자만 9번폼으로 나머지 그럼 a1기기명 b1모델 c1제조번호 d1자산번호 이부분은 7번폼으로 입력이 되야되는데 시발 기기면에 앞에 숫자 모델에 기기명 제조번호에 모델 자산번호에 시리얼넘버를 니가 입력쳐하고 지랄이세요 구글폼 1 (7번응답)은 장비시트만 관여해, 여기서 아까 장비를 팀시트로 옮기는거까지만 하는거고.구글폼 2(응답시트)는 팀시트를 관여하는거야,기억해 시발년아
-기존께 이거야 이거에 시트명은 아까 말했듯이 기존에 청력기, 중이기기, 소음계,원심분리기, 폐활량, HRV,EKG외에 추가로 1팀,2팀 3팀,4팀,5팀,6팀, 사무실, 의공실 시트가 되어있어. 새로만든 1팀,2팀 3팀,4팀,5팀,6팀, 사무실, 의공실 시트는 a1기기명 b1모델 c1제조번호 d1자산번호 e1관리자 f1 01/01 g1 01/02 h 01/03 .....NE1 12/30 NF12/31 이렇게 시트가 되어있어. 기존에 있던 시트 청력기, 중이기기, 소음계,원심분리기, 폐활량, HRV,EKG는 a1기기명 b1모델 c1제조번호 d1자산번호 e1관리자 현재위치 f1 01/01 g1 01/02 h 01/03 .....NE1 12/30 NF12/31 이렇게 되어있고. 첫번쨰 구글폼은 설문지 응답 시트7 로 a타임스탬프b자산번호c팀 선택d수령/반납 e선택반납사유 두번쨰 구글폼은 모르겠어, 아직 근대 지금 당장 새롭게 만든 시트 1팀,2팀 3팀,4팀,5팀,6팀, 사무실, 의공실 시트는 첫번쨰 구글폼으로 각 장비의 현재 위치를 기준으로 각시트로 a1기기명 b1모델 c1제조번호 d1자산번호 이부분이 넘어가야돼. ex) 첫번쨰 구글폼으로 자산번호 큐알을 찍어서 50401-00143 1팀 수령 하면 현재 위치가 1팀이니까 , a1기기명 b1모델 c1제조번호 d1자산번호 이부분은 1팀 시트로 넘어가고 . 두번쨰 시트의 큐알은 관리자가 될꺼야. 그래서 큐알은 관리자이름이 자동으로 들어가게 할꺼고, 그럼 a1기기명 b1모델 c1제조번호 d1자산번호 e1관리자 이부분이 자동으로 채워지자나. 여기서 이제 f1 01/01 g1 01/02 h 01/03 .....NE1 12/30 NF12/31 이부분에 채워져야되는데 이부분은 특이사항으로 채워질꺼야, f1 01/01 g1 01/02 h 01/03 .....NE1 12/30 NF12/31 의 열 크기는 500으로 해주고 구글폼 2의 특이사항 내용을 적어주면돼. 예를 들어 50604-00143 을 선택하고 선고장 이러면 오늘날짜 (제출날짜) 에 맞춰 특이사항이 적혀야돼
-
-두번쨰 구글폼 관리자 (김민철,김민선,김태용,안혜진,김민지,김성현,백수빈,조해영) ,팀 (1팀,2팀,3팀,4팀,5팀,6팀,사무실,의공실) ,  장비 (청력기,중이기기,소음계,원심분리기,폐활량,HRV,EKG)가 있어, 팀 - 관리자 - 장비 선택후 
-
-청력기를 선택하면 7섹션으로 이동하게 하여 7섹션 질문이 처음에 헤드셋이 설정되야돼. 이게 서로 맞는 헤드셋이 설정되야되서 헤드셋 (WT109429/WT109430,WT109528/WT109536,WT305446/WT305444,WT402572/WT402584,WT402783/WT402588,WT402782/WT402781,WT482942/WT482966,WT476053/WT498521,WT565596/WT558124,WT550841/WT567270)에서  선택해주고
-
-그 다음 선택 사항 보기가 (전원선 분실,기도 Y 코드선 파손,레스펀스 버튼 파손,부스 연결선 분실,일자 드라이버 or 육각렌치  분실,골도 헤드셋 분실 및 파손 ,특이사항 없음) 을 선택하여 제출이야
-
-만약 팀-관리자-청력기 - 헤드셋을 설정하고 사유중에 골도 헤드셋 분실 및 파손을 선택하면, 그 팀의 시트에 나타나게 되는거야.그래서 a1기기명 b1모델 c1제조번호 d1자산번호 e1관리자 f1 특이사항에  해당날짜에 (골도 헤드셋 분실 및 파손 ,특이사항 없음) 이렇게 특이사항이 남도록해줘야돼
-
-중이기기는 섹션 8로 이동하여 중이기기 ( 50604-00155,50604-00156,50604-00185,50604-00186,50604-00187,50604-00216,50604-00217)을 선택하고 특이사항 (전원선 분실,청소용 실 분실,프린트 용지 부족,특이사항 없음)가 구조야
-
-소음계는 섹션 6으로 이동하여 소음계 (70199-00231,70199-00232,70199-00233,70199-00234,70199-00235,70199-00236,70199-00237)특이사항(전원선 분실,특이사항 없음)
-
-원심분리기는 섹션4로 이동하여 원심분리기 (50209-00347,50209-00365,50209-00366,50209-00367,50209-00368,50209-00369,50209-00403,50209-00442,50209-00443,50209-00444) 특이사항(전원선 분실,뚜껑 개폐오류,특이사항 없음)
-
-폐활량는 섹션5로 이동하여 폐활량(50601-00770,50601-00771,50601-00772,50601-00773,50601-00774,50601-00775,50601-00776,50601-00822,50601-00823,50601-00863,50601-00864,50601-00871,50601-00872,50601-00873,50601-00949,50601-00950,50601-00951,50601-00964,50601-00965,50601-00966,50601-00967,50601-00968,50601-00969,50601-01533,50601-01534,50601-01535,50601-01536,50601-01537,50601-01538,50601-01539) 특이사항(전원선 분실,마우스 분실,노트북 파손,플로우 헤드 파손,특이사항 없음)
-
-HRV는 섹션2로 이동하여 HRV(50609-01184,50609-01185,50609-01186,50609-01187,50609-01188,50609-01189,50609-01190,50609-01282,50609-01283,50609-01284,50609-01285,50609-01286,50609-01437,50609-01438,50609-01439,50609-01440,50609-01441,50609-01559,50609-01560,50609-01561,50609-01562,50609-01563,50609-01564,50609-01565,50609-01566,50609-01567,50609-01568,50609-01569,50609-01570,50609-01571,50609-01628,50609-01629,50609-01630,50609-01631,50609-01632)고 특이사항 (액정파손,화면 안켜진,키보드 분실,마우스 분실,전원선 분실,허브 분실,팔다리 유도선 파손,접지 전극 파손,특이사항 없음)
-응답 시트9는 A1 타임스탬프 B1관리자 C1팀 D1장비 E1 HRV F1 특이사항 G1 EKG H1특이사항 I1원심분리기 J1특이사항 K1폐활량 L1특이사항 M1소음계 N1특이사항 O1청력기 P1헤드셋 Q1특이사항 R1중이기기 S1특이사항로 되어있고, B1의 관리자 부분이 팀시트 1팀 2팀.....의공실까지 e1에 위치한 관리자에 들어가면되고. 장비별로 특이사항은 팀시트에서 특이사항에 큐알을 제출한 날짜로 찍히면 돼
-XX팀 수령이면 현재위치에 XX팀 오늘 날짜에 XX팀 수령 , XX팀 반납 (반납사유) , XX팀 보유 이시발년아 이게 어려워?아까 했자나 그리고 XX팀 시트로 이동해서 XX팀 시트에 그 장비가  a1기기명 b1모델 c1제조번호 d1자산번호이거 입력하라했는데 25자율신경균형검사기(HRV)SA-3000P235065414 이걸 쳐입력하고 있어 개 시발년아 , 입력이 되야 되는부분은 장비에서 B1,C1,D1,E1항목이 팀시트에 A1,B1,C1,D1으로 간다고 장애인년아
+              {searchMode === 'equipment' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">장비 선택</label>
+                    <select value={selectedEquipment} onChange={(e) => { setSelectedEquipment(e.target.value); setSelectedAssetNumber(''); }} className="w-full px-3 py-3 border-2 border-gray-300 rounded-lg text-base">
+                      <option value="">선택하세요</option>
+                      {equipmentList.map(eq => <option key={eq} value={eq}>{eq}</option>)}
+                    </select>
+                  </div>
+                  {selectedEquipment && (
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">자산번호</label>
+                      <select value={selectedAssetNumber} onChange={(e) => setSelectedAssetNumber(e.target.value)} className="w-full px-3 py-3 border-2 border-gray-300 rounded-lg text-base">
+                        <option value="">선택하세요</option>
+                        {getAssetsByEquipment().map(a => <option key={a.assetNumber} value={a.assetNumber}>{a.assetNumber}</option>)}
