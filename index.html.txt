@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>자산 관리 시스템</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const SHEET_ID = '1qJpWnVNBZIwnwZG4OD3JdUKytVq_4V6n';
+    const SHEET_GIDS = {
+      '청력기': '1397804768',
+      '청력부스': '1226463543',
+      '중이기기': '1413774664',
+      '소음계': '199554987',
+      '원심분리기': '1627219985',
+      'HRV': '816640230',
+      'EKG': '914024434',
+      '폐활량': '348975961',
+      '실린지': '874684579',
+      '프린터기': '70160554',
+      '업무용노트북': '811915899',
+      '와이브로': '1793948339'
+    };
+
+    function App() {
+      const [assets, setAssets] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+      const [searchMode, setSearchMode] = useState('quick');
+      const [quickSearch, setQuickSearch] = useState('');
+      const [selectedEquipment, setSelectedEquipment] = useState('');
+      const [selectedLocation, setSelectedLocation] = useState('');
+      const [selectedAssetNumber, setSelectedAssetNumber] = useState('');
+
+      const equipmentList = Object.keys(SHEET_GIDS);
+      const locationList = ['수원', '아산1', '평택', '사무실'];
+
+      useEffect(() => {
+        loadAllData();
+      }, []);
+
+      const parseCSVLine = (line) => {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"' && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current);
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        result.push(current);
+        return result;
+      };
+
+      const loadAllData = async () => {
+        setLoading(true);
+        const allAssets = [];
+
+        try {
+          for (const [sheetName, gid] of Object.entries(SHEET_GIDS)) {
+            try {
+              const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
+              const response = await fetch(url);
+              const text = await response.text();
+              const lines = text.split('\n');
+
+              if (lines.length < 2) continue;
+
+              const headers = parseCSVLine(lines[0]);
+              const dateColumns = [];
+
+              headers.forEach((header, index) => {
+                if (header && String(header).match(/^\d{2}-\d{2}$/)) {
+                  dateColumns.push({ index, date: String(header) });
+                }
+              });
+
+              for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const row = parseCSVLine(lines[i]);
+                if (!row[4]) continue;
+
+                const notes = {};
+                dateColumns.forEach(({ index, date }) => {
+                  if (row[index] && row[index].trim()) {
+                    notes[date] = row[index].trim();
+                  }
+                });
+
+                const locationFull = row[5] || '';
+                let location = '';
+                if (locationFull.includes('수원')) location = '수원';
+                else if (locationFull.includes('아산')) location = '아산1';
+                else if (locationFull.includes('평택')) location = '평택';
+                else if (locationFull.includes('사무실')) location = '사무실';
+
+                allAssets.push({
+                  equipment: sheetName,
+                  name: row[1] || '',
+                  model: row[2] || '',
+                  serial: row[3] || '',
+                  assetNumber: row[4] || '',
+                  location: location,
+                  locationFull: locationFull,
+                  notes: notes
+                });
+              }
+            } catch (err) {
+              console.error(`${sheetName} 로드 실패:`, err);
+            }
+          }
+
+          setAssets(allAssets);
+          setLoading(false);
+        } catch (err) {
+          setError('데이터 로드 실패');
+          setLoading(false);
+        }
+      };
+
+      const getAssetsByEquipment = () => assets.filter(a => a.equipment === selectedEquipment);
+      const getEquipmentsByLocation = () => {
+        const eqs = new Set();
+        assets.filter(a => a.location === selectedLocation).forEach(a => eqs.add(a.equipment));
+        return Array.from(eqs).filter(eq => equipmentList.includes(eq));
+      };
+      const getAssetsByLocationAndEquipment = () => assets.filter(a => a.location === selectedLocation && a.equipment === selectedEquipment);
+      const getQuickSearchResult = () => quickSearch.trim() ? assets.find(a => a.assetNumber.includes(quickSearch.trim())) : null;
+      const getAllAssetsWithNotes = () => assets.filter(a => Object.keys(a.notes).length > 0);
+      const getCurrentAsset = () => searchMode === 'quick' ? getQuickSearchResult() : assets.find(a => a.assetNumber === selectedAssetNumber);
+
+      const resetSelections = () => {
+        setSelectedEquipment('');
+        setSelectedLocation('');
+        setSelectedAssetNumber('');
+        setQuickSearch('');
+      };
+
+      if (loading) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 font-medium">데이터 로딩 중...</p>
+            </div>
+          </div>
+        );
+      }
+
+      if (error) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+              <p className="text-red-600 mb-4">{error}</p>
+              <button onClick={loadAllData} className="px-6 py-3 bg-indigo-600 text-white rounded-lg">다시 시도</button>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-3">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-xl shadow-lg p-4 mb-3">
+              <div className="flex items-center justify-between">
+                <h1 className="text-xl font-bold text-gray-800">자산 관리</h1>
+                <button onClick={loadAllData} className="px-3 py-1 bg-indigo-600 text-white rounded text-sm">새로고침</button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">총 {assets.length}개 자산</p>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg p-4 mb-3">
+              <div className="grid grid-cols-4 gap-2 mb-4">
+                <button onClick={() => { setSearchMode('quick'); resetSelections(); }} className={`py-3 rounded-lg font-medium text-xs ${searchMode === 'quick' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}>빠른검색</button>
+                <button onClick={() => { setSearchMode('equipment'); resetSelections(); }} className={`py-3 rounded-lg font-medium text-xs ${searchMode === 'equipment' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}>장비</button>
+                <button onClick={() => { setSearchMode('location'); resetSelections(); }} className={`py-3 rounded-lg font-medium text-xs ${searchMode === 'location' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700'}`}>장소</button>
+                <button onClick={() => { setSearchMode('allnotes'); resetSelections(); }} className={`py-3 rounded-lg font-medium text-xs ${searchMode === 'allnotes' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700'}`}>특이사항</button>
+              </div>
+
+              {searchMode === 'quick' && (
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">자산번호 입력 (QR 스캔)</label>
+                  <input type="text" value={quickSearch} onChange={(e) => setQuickSearch(e.target.value)} placeholder="자산번호 입력" className="w-full px-4 py-4 border-2 border-gray-300 rounded-lg text-lg" autoFocus />
+                </div>
+              )}
+
+              {searchMode === 'equipment' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">장비 선택</label>
+                    <select value={selectedEquipment} onChange={(e) => { setSelectedEquipment(e.target.value); setSelectedAssetNumber(''); }} className="w-full px-3 py-3 border-2 border-gray-300 rounded-lg text-base">
+                      <option value="">선택하세요</option>
+                      {equipmentList.map(eq => <option key={eq} value={eq}>{eq}</option>)}
+                    </select>
+                  </div>
+                  {selectedEquipment && (
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">자산번호</label>
+                      <select value={selectedAssetNumber} onChange={(e) => setSelectedAssetNumber(e.target.value)} className="w-full px-3 py-3 border-2 border-gray-300 rounded-lg text-base">
+                        <option value="">선택하세요</option>
+                        {getAssetsByEquipment().map(a => <option key={a.assetNumber} value={a.assetNumber}>{a.assetNumber}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {searchMode === 'location' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">장소 선택</label>
+                    <select value={selectedLocation} onChange={(e) => { setSelectedLocation(e.target.value); setSelectedEquipment(''); setSelectedAssetNumber(''); }} className="w-full px-3 py-3 border-2 border-gray-300 rounded-lg text-base">
+                      <option value="">선택하세요</option>
+                      {locationList.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+                    </select>
+                  </div>
+                  {selectedLocation && getEquipmentsByLocation().length > 0 && (
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">장비 선택</label>
+                      <select value={selectedEquipment} onChange={(e) => { setSelectedEquipment(e.target.value); setSelectedAssetNumber(''); }} className="w-full px-3 py-3 border-2 border-gray-300 rounded-lg text-base">
+                        <option value="">선택하세요</option>
+                        {getEquipmentsByLocation().map(eq => <option key={eq} value={eq}>{eq}</option>)}
+                      </select>
+                    </div>
+                  )}
+                  {selectedLocation && selectedEquipment && (
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">자산번호</label>
+                      <select value={selectedAssetNumber} onChange={(e) => setSelectedAssetNumber(e.target.value)} className="w-full px-3 py-3 border-2 border-gray-300 rounded-lg text-base">
+                        <option value="">선택하세요</option>
+                        {getAssetsByLocationAndEquipment().map(a => <option key={a.assetNumber} value={a.assetNumber}>{a.assetNumber}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg p-4">
+              {searchMode === 'allnotes' ? (
+                <>
+                  <h2 className="text-lg font-bold text-gray-800 mb-3">특이사항 있는 장비 ({getAllAssetsWithNotes().length}개)</h2>
+                  <div className="space-y-3">
+                    {getAllAssetsWithNotes().map((asset, idx) => (
+                      <div key={idx} className="border-2 border-gray-200 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-bold">{asset.equipment}</span>
+                          <span className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-bold">{Object.keys(asset.notes).length}건</span>
+                        </div>
+                        <p className="font-bold text-sm mb-1">{asset.assetNumber}</p>
+                        <p className="text-xs text-gray-600 mb-2">{asset.name}</p>
+                        <div className="bg-yellow-50 border border-yellow-300 rounded p-2 text-xs">
+                          {Object.entries(asset.notes).slice(0, 2).map(([date, note]) => (
+                            <div key={date}><span className="font-bold">{date}:</span> {note.substring(0, 40)}...</div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-lg font-bold text-gray-800 mb-3">장비 정보</h2>
+                  {getCurrentAsset() ? (
+                    <div className="border-2 border-indigo-300 rounded-lg p-4">
+                      <div className="mb-2">
+                        <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-bold">{getCurrentAsset().equipment}</span>
+                      </div>
+                      <div className="space-y-2 mb-3">
+                        <div><p className="text-xs text-gray-500">자산번호</p><p className="font-bold text-lg">{getCurrentAsset().assetNumber}</p></div>
+                        <div><p className="text-xs text-gray-500">기기명</p><p className="text-sm">{getCurrentAsset().name}</p></div>
+                        <div><p className="text-xs text-gray-500">모델</p><p className="text-sm">{getCurrentAsset().model}</p></div>
+                      </div>
+                      {getCurrentAsset().locationFull && (
+                        <div className="bg-green-50 border border-green-300 rounded p-2 mb-3">
+                          <p className="text-xs text-gray-500 mb-1">위치</p>
+                          <p className="text-sm font-bold">{getCurrentAsset().locationFull}</p>
+                        </div>
+                      )}
+                      {Object.keys(getCurrentAsset().notes).length > 0 && (
+                        <div className="bg-yellow-50 border border-yellow-300 rounded p-3">
+                          <p className="text-sm font-bold mb-2">특이사항 ({Object.keys(getCurrentAsset().notes).length}건)</p>
+                          <div className="space-y-2 text-xs max-h-60 overflow-y-auto">
+                            {Object.entries(getCurrentAsset().notes).map(([date, note]) => (
+                              <div key={date} className="pb-2 border-b">
+                                <p className="font-bold text-orange-700">{date}</p>
+                                <p>{note}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-center py-8 text-gray-500">선택하세요</p>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
