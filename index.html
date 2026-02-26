@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>장비관리</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:sans-serif;background:#f5f5f5}
+.hide{display:none!important}
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#d63031;padding:20px}
+#mainScreen{min-height:100vh;background:#f5f5f5}
+.box{background:white;border-radius:16px;padding:30px;max-width:400px;width:100%}
+h1{font-size:24px;text-align:center;margin-bottom:30px;color:#d63031}
+input{width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;margin-bottom:10px;font-size:14px}
+button{width:100%;padding:14px;background:#d63031;color:white;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:10px}
+.header{background:#d63031;color:white;padding:20px}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+<div class="box">
+<h1>🏥 장비관리</h1>
+<input type="text" id="loginId" placeholder="사번" value="218062">
+<input type="password" id="loginPw" placeholder="비밀번호" value="1234">
+<button id="loginBtn">로그인</button>
+<button id="signupBtn" style="background:#6c757d">회원가입</button>
+</div>
+</div>
+
+<div id="mainScreen" class="hide">
+<div class="header">
+<h1 style="font-size:24px;text-align:center">🏥 장비관리</h1>
+<div style="text-align:center;margin-top:15px;font-size:16px" id="userInfo"></div>
+<button id="logoutBtn" style="width:auto;margin:15px auto 0;display:block;padding:10px 30px">로그아웃</button>
+</div>
+<div style="padding:40px;text-align:center">
+<div style="font-size:48px;margin-bottom:20px">✅</div>
+<div style="font-size:24px;font-weight:700;color:#28a745;margin-bottom:15px">로그인 성공!</div>
+<div style="font-size:18px;color:#666">장비 관리 화면입니다.</div>
+</div>
+</div>
+
+<script>
+console.log('=== 스크립트 시작 ===');
+
+let user=null;
+
+document.getElementById('loginBtn').onclick=function(){
+  console.log('로그인 버튼 클릭!');
+  
+  const id=document.getElementById('loginId').value.trim();
+  const pw=document.getElementById('loginPw').value;
+  
+  console.log('입력값 - 사번:',id,'비번:',pw);
+  
+  if(!id||!pw){
+    alert('사번/비밀번호를 입력하세요');
+    return;
+  }
+  
+  const users=JSON.parse(localStorage.getItem('users')||'[]');
+  console.log('저장된 사용자 수:',users.length);
+  
+  const u=users.find(x=>x.employeeId===id);
+  
+  if(!u){
+    alert('등록되지 않은 사번입니다!\n먼저 회원가입을 하세요!');
+    return;
+  }
+  
+  console.log('사용자 찾음:',u);
+  
+  if(!u.approved){
+    alert('승인 대기중입니다!');
+    return;
+  }
+  
+  if(u.password!==pw){
+    alert('비밀번호가 틀렸습니다!');
+    return;
+  }
+  
+  user=u;
+  console.log('로그인 성공!',user);
+  
+  // 화면 전환
+  console.log('화면 전환 시작');
+  document.getElementById('loginScreen').classList.add('hide');
+  document.getElementById('mainScreen').classList.remove('hide');
+  document.getElementById('userInfo').textContent='환영합니다, '+user.name+'님! ('+user.team+')';
+  console.log('화면 전환 완료');
+  
+  alert('로그인 성공!\n이름: '+user.name+'\n팀: '+user.team);
+};
+
+document.getElementById('signupBtn').onclick=function(){
+  console.log('회원가입 버튼 클릭!');
+  
+  const id=document.getElementById('loginId').value.trim();
+  const pw=document.getElementById('loginPw').value;
+  
+  if(!id||!pw){
+    alert('사번/비밀번호를 입력하세요');
+    return;
+  }
+  
+  if(pw.length<4){
+    alert('비밀번호는 4자리 이상이어야 합니다');
+    return;
+  }
+  
+  const users=JSON.parse(localStorage.getItem('users')||'[]');
+  
+  if(users.find(u=>u.employeeId===id)){
+    alert('이미 등록된 사번입니다!');
+    return;
+  }
+  
+  const isAdmin=(id==='218062');
+  
+  const newUser={
+    employeeId:id,
+    name:'테스트사용자',
+    team:'테스트팀',
+    password:pw,
+    approved:isAdmin,
+    isAdmin:isAdmin
+  };
+  
+  users.push(newUser);
+  localStorage.setItem('users',JSON.stringify(users));
+  
+  console.log('회원가입 완료:',newUser);
+  
+  alert(isAdmin?'✅ 관리자 등록 완료!\n바로 로그인할 수 있습니다.':'✅ 회원가입 완료!\n관리자 승인 후 로그인할 수 있습니다.');
+};
+
+document.getElementById('logoutBtn').onclick=function(){
+  console.log('로그아웃!');
+  user=null;
+  document.getElementById('loginScreen').classList.remove('hide');
+  document.getElementById('mainScreen').classList.add('hide');
+  alert('로그아웃 되었습니다!');
+};
+
+console.log('=== 준비 완료 ===');
+</script>
+</body>
+</html>
