@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>장비 관리</title>
+<style>
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;background:#f0f2f5;min-height:100vh}
+.screen{display:none}
+.screen.active{display:block}
+
+/* LOGIN */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)}
+.login-box{background:#fff;border-radius:16px;padding:40px 32px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.login-box h1{font-size:22px;font-weight:700;color:#1a1a2e;margin-bottom:6px;text-align:center}
+.login-box p{font-size:13px;color:#888;text-align:center;margin-bottom:28px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:6px}
+.form-group input,.form-group select{width:100%;padding:12px 14px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:15px;outline:none;transition:border-color .2s}
+.form-group input:focus,.form-group select:focus{border-color:#0f3460}
+.btn{width:100%;padding:13px;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:#0f3460;color:#fff}
+.btn-primary:hover{background:#1a4a80}
+.btn-secondary{background:#f0f2f5;color:#444;margin-top:10px}
+.btn-secondary:hover{background:#e0e2e5}
+.btn-danger{background:#e74c3c;color:#fff}
+.btn-sm{padding:7px 14px;font-size:13px;width:auto;border-radius:6px}
+
+/* MODALS */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.active{display:flex}
+.modal{background:#fff;border-radius:16px;padding:28px 24px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:18px;font-weight:700;margin-bottom:20px;color:#1a1a2e}
+.modal-close{float:right;background:none;border:none;font-size:22px;cursor:pointer;color:#888;margin-top:-4px}
+
+/* MAIN APP */
+#mainScreen{display:none}
+#mainScreen.active{display:block}
+.header{background:#0f3460;color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header h1{font-size:17px;font-weight:700}
+.header-right{display:flex;align-items:center;gap:10px}
+.user-info{font-size:13px;opacity:.85}
+.icon-btn{background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:8px;padding:7px 10px;cursor:pointer;font-size:13px}
+
+/* TABS */
+.tabs{display:flex;background:#fff;border-bottom:1px solid #e0e0e0;position:sticky;top:57px;z-index:99}
+.tab{flex:1;padding:12px;text-align:center;font-size:14px;font-weight:600;color:#888;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+.tab.active{color:#0f3460;border-bottom-color:#0f3460}
+
+/* FILTER BAR */
+.filter-bar{background:#fff;padding:12px 16px;border-bottom:1px solid #e0e0e0;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter-chip{padding:6px 14px;border-radius:20px;border:1.5px solid #e0e0e0;font-size:13px;cursor:pointer;white-space:nowrap;background:#fff;transition:all .2s}
+.filter-chip.active{background:#0f3460;color:#fff;border-color:#0f3460}
+
+/* SEARCH */
+.search-bar{padding:12px 16px;background:#fff;border-bottom:1px solid #e0e0e0}
+.search-bar input{width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;outline:none}
+.search-bar input:focus{border-color:#0f3460}
+
+/* MULTI SELECT BAR */
+.select-bar{background:#0f3460;color:#fff;padding:10px 16px;display:none;align-items:center;justify-content:space-between;position:sticky;top:57px;z-index:98}
+.select-bar.active{display:flex}
+.select-bar span{font-size:14px}
+.select-actions{display:flex;gap:8px}
+.sel-btn{padding:7px 12px;border-radius:6px;border:none;font-size:13px;font-weight:600;cursor:pointer}
+
+/* EQUIPMENT LIST */
+.equipment-list{padding:12px 16px}
+.equip-card{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08);display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s;border:2px solid transparent}
+.equip-card.selected{border-color:#0f3460;background:#f0f4ff}
+.equip-check{width:22px;height:22px;border:2px solid #ccc;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.equip-card.selected .equip-check{background:#0f3460;border-color:#0f3460;color:#fff}
+.equip-info{flex:1;min-width:0}
+.equip-name{font-size:14px;font-weight:600;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.equip-asset{font-size:12px;color:#888;margin-top:2px}
+.equip-sub{font-size:12px;color:#666;margin-top:3px}
+.equip-status{font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.status-수령{background:#e8f4ff;color:#0f3460}
+.status-반납{background:#fff0e8;color:#e67e22}
+.status-보유{background:#e8fff0;color:#27ae60}
+.status-수령예정{background:#f0e8ff;color:#8e44ad}
+
+/* LOADING */
+.loading{text-align:center;padding:40px;color:#888}
+.spinner{width:32px;height:32px;border:3px solid #e0e0e0;border-top-color:#0f3460;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ACTION MODAL */
+.action-section{margin-bottom:16px}
+.action-section label{display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:8px}
+.radio-group{display:flex;gap:8px;flex-wrap:wrap}
+.radio-btn{padding:8px 14px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:13px;cursor:pointer;background:#fff;transition:all .2s}
+.radio-btn.active{background:#0f3460;color:#fff;border-color:#0f3460}
+.selected-list{background:#f8f9fa;border-radius:8px;padding:10px;margin-bottom:16px;max-height:120px;overflow-y:auto}
+.selected-list .item{font-size:13px;color:#444;padding:3px 0;border-bottom:1px solid #eee}
+.selected-list .item:last-child{border-bottom:none}
+textarea{width:100%;padding:10px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;resize:vertical;min-height:70px;outline:none}
+textarea:focus{border-color:#0f3460}
+
+/* TEAM VIEW */
+.team-section{margin-bottom:16px}
+.team-header{background:#fff;padding:12px 16px;font-size:15px;font-weight:700;color:#1a1a2e;border-left:4px solid #0f3460;margin-bottom:8px}
+
+/* ADMIN */
+.pending-card{background:#fff;border-radius:10px;padding:14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.pending-card .name{font-weight:600;font-size:15px}
+.pending-card .info{font-size:13px;color:#888;margin:4px 0 10px}
+.approve-btns{display:flex;gap:8px}
+
+/* TOAST */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#c00;color:#fff;padding:14px 28px;border-radius:10px;font-size:15px;font-weight:600;z-index:9999;display:none;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.3)}
+.toast.show{display:block}
+
+/* EMAIL MODAL */
+.email-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee}
+.email-item:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="loginScreen" class="screen active">
+  <div class="login-box">
+    <h1>장비 관리 시스템</h1>
+    <p>사번과 비밀번호로 로그인하세요</p>
+    <div class="form-group"><label>사번</label><input type="text" id="loginId" placeholder="사번 입력" autocomplete="off"></div>
+    <div class="form-group"><label>비밀번호</label><input type="password" id="loginPw" placeholder="비밀번호 입력"></div>
+    <div id="loginError" style="color:#c00;font-size:13px;margin-bottom:8px;display:none"></div>
+    <button class="btn btn-primary" id="loginBtn">로그인</button>
+    <button class="btn btn-secondary" id="openRegisterBtn">회원가입</button>
+  </div>
+</div>
+
+<!-- 회원가입 모달 -->
+<div class="modal-overlay" id="registerModal">
+  <div class="modal">
+    <button class="modal-close" id="closeRegisterBtn">&times;</button>
+    <h2>회원가입</h2>
+    <div class="form-group"><label>사번</label><input type="text" id="regId" placeholder="사번 입력"></div>
+    <div class="form-group"><label>이름</label><input type="text" id="regName" placeholder="이름 입력"></div>
+    <div class="form-group"><label>비밀번호</label><input type="password" id="regPw" placeholder="비밀번호 입력"></div>
+    <div class="form-group"><label>소속팀</label>
+      <select id="regTeam">
+        <option value="1팀" selected>1팀</option><option value="2팀">2팀</option><option value="3팀">3팀</option>
+        <option value="4팀">4팀</option><option value="5팀">5팀</option><option value="6팀">6팀</option>
+        <option value="수원">수원</option><option value="평택">평택</option><option value="아산1">아산1</option>
+        <option value="사무실">사무실</option><option value="의공실">의공실</option><option value="센터">센터</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" id="submitRegisterBtn">가입 신청</button>
+  </div>
+</div>
+
+<!-- 메인 화면 -->
+<div id="mainScreen" class="screen">
+  <div class="header">
+    <h1>장비 관리</h1>
+    <div class="header-right">
+      <span class="user-info" id="userInfoText"></span>
+      <button class="icon-btn" id="editProfileOpenBtn">수정</button>
+      <button class="icon-btn" id="adminOpenBtn" style="display:none">관리</button>
+      <button class="icon-btn" id="logoutBtn">로그아웃</button>
+    </div>
+  </div>
+  <div class="select-bar" id="selectBar">
+    <span id="selectCount">0개 선택</span>
+    <div class="select-actions">
+      <button class="sel-btn" style="background:#27ae60;color:#fff" id="processSelBtn">처리</button>
+      <button class="sel-btn" style="background:#e74c3c;color:#fff" id="cancelSelBtn">취소</button>
+    </div>
+  </div>
+  <div id="dateBackBtn" style="display:none;background:#0f3460;color:#fff;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;position:sticky;top:57px;z-index:100">← 달력</div>
+  <div class="tabs">
+    <div class="tab active" data-tab="equip">장비별</div>
+    <div class="tab" data-tab="team">팀별</div>
+    <div class="tab" data-tab="date">날짜별</div>
+  </div>
+  <div id="equipTab">
+    <div class="filter-bar" id="categoryFilter"></div>
+    <div class="search-bar"><input type="text" id="searchInput" placeholder="자산번호, 기기명 검색..."></div>
+    <div class="equipment-list" id="equipList"><div class="loading"><div class="spinner"></div>장비 데이터 로딩 중...</div></div>
+  </div>
+  <div id="teamTab" style="display:none">
+    <div class="filter-bar" id="teamFilter"></div>
+    <div class="equipment-list" id="teamList"></div>
+  </div>
+  <div id="dateTab" style="display:none;padding:0 0 80px 0">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px">
+      <button id="calPrevBtn" style="border:none;background:none;font-size:22px;cursor:pointer;color:#0f3460">&#8249;</button>
+      <div id="calTitle" style="font-weight:700;font-size:16px;color:#0f3460"></div>
+      <button id="calNextBtn" style="border:none;background:none;font-size:22px;cursor:pointer;color:#0f3460">&#8250;</button>
+    </div>
+    <div id="calGrid" style="padding:0 12px"></div>
+    <div id="calLegend"></div>
+    <div id="calDetail" style="padding:12px 16px"></div>
+  </div>
+  <div class="modal-overlay" id="actionModal">
+    <div class="modal">
+      <button class="modal-close" id="closeActionBtn">&times;</button>
+      <h2 id="actionTitle">수령/반납 처리</h2>
+      <div class="selected-list" id="selectedList"></div>
+      <div class="action-section">
+        <label>처리 유형</label>
+        <div class="radio-group" id="actionType">
+          <button class="radio-btn active" data-val="수령">수령</button>
+          <button class="radio-btn" data-val="반납">반납</button>
+          <button class="radio-btn" data-val="보유">보유</button>
+          <button class="radio-btn" data-val="수령예정">수령예정</button>
+        </div>
+      </div>
+      <div class="action-section" id="teamSection">
+        <label>팀 / 위치</label>
+        <select id="actionTeam">
+          <option value="1팀">1팀</option><option value="2팀">2팀</option><option value="3팀">3팀</option>
+          <option value="4팀">4팀</option><option value="5팀">5팀</option><option value="6팀">6팀</option>
+          <option value="수원">수원</option><option value="평택">평택</option><option value="아산1">아산1</option>
+          <option value="사무실">사무실</option><option value="의공실">의공실</option><option value="센터">센터</option>
+        </select>
+      </div>
+      <div class="action-section" id="returnReasonSection" style="display:none">
+        <label>반납 사유</label>
+        <div class="radio-group" id="returnReason">
+          <button class="radio-btn active" data-val="팀해체">팀해체</button>
+          <button class="radio-btn" data-val="장비점검">장비점검</button>
+          <button class="radio-btn" data-val="폐기">폐기</button>
+          <button class="radio-btn" data-val="의공실">의공실</button>
+          <button class="radio-btn" data-val="기타">기타</button>
+        </div>
+        <input type="text" id="returnReasonCustom" placeholder="기타 사유" style="margin-top:10px;width:100%;padding:10px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;display:none;outline:none">
+      </div>
+      <div class="action-section">
+        <label>특이사항</label>
+        <div class="radio-group" id="noteType">
+          <button class="radio-btn active" data-val="없음">특이사항 없음</button>
+          <button class="radio-btn" data-val="있음">특이사항 있음</button>
+        </div>
+        <input type="text" id="noteCustom" placeholder="특이사항 입력" style="margin-top:10px;width:100%;padding:10px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;display:none;outline:none">
+      </div>
+      <button class="btn btn-primary" id="submitActionBtn" style="margin-top:8px">확인</button>
+    </div>
+  </div>
+  <div class="modal-overlay" id="emailModal">
+    <div class="modal">
+      <button class="modal-close" id="closeEmailBtn">&times;</button>
+      <h2>이메일 전송</h2>
+      <div class="form-group"><label>받는 사람</label><input type="email" id="emailTo" placeholder="이메일 주소 입력"></div>
+      <div class="form-group"><label>제목</label><input type="text" id="emailSubject" placeholder="제목"></div>
+      <div class="form-group"><label>내용</label><textarea id="emailBody" rows="5" style="width:100%;padding:10px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:13px;resize:vertical"></textarea></div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-primary" id="submitEmailBtn" style="flex:1">앱스크립트로 전송</button>
+        <button class="btn" id="mailtoEmailBtn" style="flex:1;background:#f1f5f9;color:#0f3460;border:1.5px solid #0f3460">메일앱으로 열기</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="adminModal">
+    <div class="modal">
+      <button class="modal-close" id="closeAdminBtn">&times;</button>
+      <h2>가입 승인 관리</h2>
+      <div id="pendingList"></div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="editProfileModal">
+    <div class="modal">
+      <button class="modal-close" id="closeEditBtn">&times;</button>
+      <h2>정보 수정</h2>
+      <div class="form-group"><label>소속팀</label>
+        <select id="editTeam">
+          <option value="1팀">1팀</option><option value="2팀">2팀</option><option value="3팀">3팀</option>
+          <option value="4팀">4팀</option><option value="5팀">5팀</option><option value="6팀">6팀</option>
+          <option value="수원">수원</option><option value="평택">평택</option><option value="아산1">아산1</option>
+          <option value="사무실">사무실</option><option value="의공실">의공실</option><option value="센터">센터</option>
+        </select>
+      </div>
+      <div class="form-group"><label>새 비밀번호 (변경시만)</label><input type="password" id="editPw" placeholder="새 비밀번호"></div>
+      <button class="btn btn-primary" id="submitEditBtn">수정 완료</button>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+
+'use strict';
+
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxjVYcgEiBP_GjtLtXQ9rQyOkVDYPjjeEt_raw2lu_2RJuDY3tQ2NMPjObzBoTA-1tI/exec';
+var TEAMS = ['1팀','2팀','3팀','4팀','5팀','6팀','수원','평택','아산1','사무실','의공실','센터'];
+var CATEGORIES = ['전체','청력기','청력부스','중이기기','소음계','원심분리기','HRV','EKG','폐활량','실린지','프린터기','업무용노트북','와이브로','포터블모니터'];
+var HEADSET_DATA = {
+  '50604-00152':{hm:'SA-203',hs:'WT109429/WT109430'},
+  '50604-00153':{hm:'SA-203',hs:'WT109431/WT109432'},
+  '50604-00154':{hm:'SA-203',hs:'WT109433/WT109434'},
+  '50604-00155':{hm:'SA-203',hs:'WT109435/WT109436'},
+  '50604-00156':{hm:'SA-203',hs:'WT109437/WT109438'},
+  '50604-00157':{hm:'SA-203',hs:'WT109439/WT109440'},
+  '50604-00158':{hm:'SA-203',hs:'WT109441/WT109442'},
+  '50604-00159':{hm:'SA-203',hs:'WT109443/WT109444'},
+  '50604-00160':{hm:'SA-203',hs:'WT109445/WT109446'},
+  '50604-00161':{hm:'SA-203',hs:'WT109447/WT109448'},
+  '50604-00162':{hm:'SA-203',hs:'WT109449/WT109450'},
+  '50604-00163':{hm:'SA-203',hs:'WT109451/WT109452'}
+};
+
+var currentUser = null;
+var allEquipment = [];
+var selectedIds = [];
+var currentCategoryFilter = '전체';
+var currentTeamFilter = '전체';
+var currentActionType = '수령';
+var currentReturnReason = '팀해체';
+var currentNoteType = '없음';
+var emailTargetEquip = null;
+var dataLoaded = false;
+
+function api(params, cb) {
+  var url = SCRIPT_URL + '?' + Object.keys(params).map(function(k){
+    return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+  }).join('&');
+  fetch(url)
+    .then(function(r){
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(cb)
+    .catch(function(e){ cb({status:'error', msg: String(e)}); });
+}
+
+function init() {
+  try {
+    showLogin();
+    setupEvents();
+  } catch(err) {
+    alert('초기화 오류: ' + err.message + '\n' + err.stack);
+  }
+}
+
+function showLogin() {
+  document.getElementById('loginScreen').style.display = '';
+  document.getElementById('loginScreen').classList.add('active');
+  document.getElementById('mainScreen').style.display = 'none';
+  document.getElementById('mainScreen').classList.remove('active');
+  document.getElementById('loginId').value = '';
+  document.getElementById('loginPw').value = '';
+  document.getElementById('loginBtn').textContent = '로그인';
+  document.getElementById('loginBtn').disabled = false;
+}
+
+function showMain() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('loginScreen').classList.remove('active');
+  document.getElementById('mainScreen').style.display = 'block';
+  document.getElementById('mainScreen').classList.add('active');
+  document.getElementById('userInfoText').textContent = (currentUser.name||'') + ' (' + currentUser.team + ')';
+  document.getElementById('adminOpenBtn').style.display = currentUser.isAdmin ? 'block' : 'none';
+  buildCategoryFilter();
+  buildTeamFilter();
+  if (!dataLoaded) loadEquipmentData();
+  else renderEquipList();
+}
+
+function setupEvents() {
+  document.getElementById('loginBtn').onclick = doLogin;
+  document.getElementById('loginId').oninput = function(){ var e=document.getElementById('loginError'); if(e) e.style.display='none'; };
+  document.getElementById('loginPw').oninput = function(){ var e=document.getElementById('loginError'); if(e) e.style.display='none'; };
+  document.getElementById('loginId').onkeydown = function(e){ if(e.key==='Enter') doLogin(); };
+  document.getElementById('loginPw').onkeydown = function(e){ if(e.key==='Enter') doLogin(); };
+  document.getElementById('openRegisterBtn').onclick = function(){ openModal('registerModal'); };
+  document.getElementById('closeRegisterBtn').onclick = function(){ closeModal('registerModal'); };
+  document.getElementById('submitRegisterBtn').onclick = doRegister;
+  document.getElementById('editProfileOpenBtn').onclick = openEditProfile;
+  document.getElementById('closeEditBtn').onclick = function(){ closeModal('editProfileModal'); };
+  document.getElementById('submitEditBtn').onclick = doEditProfile;
+  document.getElementById('logoutBtn').onclick = doLogout;
+  document.querySelectorAll('.tab').forEach(function(tab){
+    tab.onclick = function(){
+      document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+      tab.classList.add('active');
+      var t = tab.getAttribute('data-tab');
+      document.getElementById('equipTab').style.display  = t==='equip' ? 'block' : 'none';
+      document.getElementById('teamTab').style.display   = t==='team'  ? 'block' : 'none';
+      document.getElementById('dateTab').style.display   = t==='date'  ? 'block' : 'none';
+      // 날짜별 탭에서는 상단 탭바 숨기기
+      document.querySelector('.tabs').style.display = t==='date' ? 'none' : 'flex';
+      document.getElementById('dateBackBtn').style.display = t==='date' ? 'block' : 'none';
+      if (t==='team') renderTeamList();
+      if (t==='date') renderCalendar();
+    };
+  });
+  document.getElementById('dateBackBtn').onclick = function(){
+    document.querySelector('.tabs').style.display = 'flex';
+    document.getElementById('dateBackBtn').style.display = 'none';
+    document.getElementById('dateTab').style.display = 'none';
+    document.getElementById('equipTab').style.display = 'block';
+    document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+    document.querySelector('.tab[data-tab="equip"]').classList.add('active');
+  };
+  document.getElementById('searchInput').oninput = renderEquipList;
+  document.getElementById('processSelBtn').onclick = openActionModal;
+  document.getElementById('cancelSelBtn').onclick  = clearSelection;
+  document.getElementById('closeActionBtn').onclick = function(){ closeModal('actionModal'); };
+  document.getElementById('submitActionBtn').onclick = submitAction;
+  document.querySelectorAll('#actionType .radio-btn').forEach(function(btn){
+    btn.onclick = function(){
+      document.querySelectorAll('#actionType .radio-btn').forEach(function(b){b.classList.remove('active');});
+      btn.classList.add('active');
+      currentActionType = btn.getAttribute('data-val');
+      var isReturn = currentActionType==='반납';
+      document.getElementById('returnReasonSection').style.display = isReturn ? 'block':'none';
+      document.getElementById('teamSection').style.display = isReturn ? 'none':'block';
+    };
+  });
+  document.querySelectorAll('#returnReason .radio-btn').forEach(function(btn){
+    btn.onclick = function(){
+      document.querySelectorAll('#returnReason .radio-btn').forEach(function(b){b.classList.remove('active');});
+      btn.classList.add('active');
+      currentReturnReason = btn.getAttribute('data-val');
+      document.getElementById('returnReasonCustom').style.display = currentReturnReason==='기타' ? 'block':'none';
+    };
+  });
+  document.querySelectorAll('#noteType .radio-btn').forEach(function(btn){
+    btn.onclick = function(){
+      document.querySelectorAll('#noteType .radio-btn').forEach(function(b){b.classList.remove('active');});
+      btn.classList.add('active');
+      currentNoteType = btn.getAttribute('data-val');
+      document.getElementById('noteCustom').style.display = currentNoteType==='있음' ? 'block':'none';
+    };
+  });
+  document.getElementById('closeEmailBtn').onclick  = function(){ closeModal('emailModal'); };
+  document.getElementById('mailtoEmailBtn').onclick = openMailto;
+  document.getElementById('submitEmailBtn').onclick = submitEmail;
+  document.getElementById('adminOpenBtn').onclick   = openAdminModal;
+  document.getElementById('closeAdminBtn').onclick  = function(){ closeModal('adminModal'); };
+}
+
+function getLocalUsers() {
+  try { return JSON.parse(localStorage.getItem('users')||'[]'); } catch(e) { return []; }
+}
+function saveLocalUsers(u) { localStorage.setItem('users', JSON.stringify(u)); }
+
+function doLogin() {
+  var id = document.getElementById('loginId').value.trim();
+  var pw = document.getElementById('loginPw').value;
+  if (!id || !pw) { showToast('사번과 비밀번호를 입력하세요'); return; }
+  var users = getLocalUsers();
+  for (var i=0;i<users.length;i++) {
+    if (users[i].id===id && users[i].pw===pw) {
+      if (!users[i].approved) { showToast('관리자 승인 대기 중입니다'); return; }
+      currentUser = {id:users[i].id, name:users[i].name, team:users[i].team, isAdmin:!!users[i].isAdmin};
+      showMain();
+      return;
+    }
+  }
+  var errEl = document.getElementById('loginError');
+  if (errEl) { errEl.textContent='사번 또는 비밀번호가 틀렸습니다'; errEl.style.display='block'; }
+  showToast('사번 또는 비밀번호가 틀렸습니다');
+}
+
+function doRegister() {
+  var id   = document.getElementById('regId').value.trim();
+  var name = document.getElementById('regName').value.trim();
+  var pw   = document.getElementById('regPw').value;
+  var team = document.getElementById('regTeam').value;
+  if (!id||!name||!pw||!team) { showToast('모든 항목을 입력하세요'); return; }
+  var users = getLocalUsers();
+  for (var i=0;i<users.length;i++) { if(users[i].id===id){ showToast('이미 존재하는 사번'); return; } }
+  var isFirst = users.length===0;
+  users.push({id:id,name:name,pw:pw,team:team,approved:isFirst,isAdmin:isFirst});
+  saveLocalUsers(users);
+  closeModal('registerModal');
+  if (isFirst) {
+    // 첫 가입자 = 관리자, 바로 로그인
+    currentUser = {id:id, name:name, team:team, isAdmin:true};
+    showMain();
+    showToast('관리자 계정으로 로그인됐습니다');
+  } else {
+    showToast('가입 신청 완료. 관리자 승인 후 로그인 가능합니다.');
+  }
+}
+
+function openEditProfile() {
+  var sel = document.getElementById('editTeam');
+  for (var i=0;i<sel.options.length;i++) { if(sel.options[i].value===currentUser.team){sel.selectedIndex=i;break;} }
+  document.getElementById('editPw').value = '';
+  openModal('editProfileModal');
+}
+
+function doEditProfile() {
+  var team = document.getElementById('editTeam').value;
+  var newPw = document.getElementById('editPw').value;
+  var users = getLocalUsers();
+  for (var i=0;i<users.length;i++) {
+    if (users[i].id===currentUser.id) {
+      users[i].team=team;
+      if (newPw) users[i].pw=newPw;
+      break;
+    }
+  }
+  saveLocalUsers(users);
+  currentUser.team = team;
+  document.getElementById('userInfoText').textContent = (currentUser.name||'') + ' (' + currentUser.team + ')';
+  closeModal('editProfileModal');
+  showToast('정보 수정됐습니다');
+}
+
+function doLogout() {
+  currentUser = null; dataLoaded = false; allEquipment = []; selectedIds = [];
+  showLogin();
+}
+
+function loadEquipmentData() {
+  document.getElementById('equipList').innerHTML = '<div class="loading"><div class="spinner"></div>장비 데이터 로딩 중...</div>';
+  api({action:'generateAll'}, function(data){
+    if (!data || data.status === 'error') {
+      document.getElementById('equipList').innerHTML =
+        '<div style="padding:20px;color:#c00;text-align:center;font-size:14px">' +
+        '⚠️ Apps Script 연결 실패<br><small>' + (data&&data.msg||'URL 확인 필요') + '</small><br><br>' +
+        '<button onclick="loadEquipmentData()" style="padding:8px 16px;background:#0f3460;color:#fff;border:none;border-radius:8px;cursor:pointer">다시 시도</button>' +
+        '</div>';
+      return;
+    }
+    var items = [];
+    if (data && data.equipment) items = data.equipment;
+    else if (Array.isArray(data)) items = data;
+    items.forEach(function(item){
+      if (!item.status) item.status = '보유';
+      if (item.category==='청력기' && HEADSET_DATA[item.assetNo]) {
+        item.headsetModel  = HEADSET_DATA[item.assetNo].hm;
+        item.headsetSerial = HEADSET_DATA[item.assetNo].hs;
+      }
+    });
+    var saved = {};
+    try { saved = JSON.parse(localStorage.getItem('equipStatus')||'{}'); } catch(e) {}
+    items.forEach(function(item){
+      if (saved[item.assetNo]) {
+        item.status     = saved[item.assetNo].status     || item.status;
+        item.location   = saved[item.assetNo].location   || item.location;
+        item.lastUser   = saved[item.assetNo].lastUser   || '';
+        item.lastNote   = saved[item.assetNo].lastNote   || '';
+        item.lastAction = saved[item.assetNo].lastAction || '';
+      }
+    });
+    allEquipment = items;
+    dataLoaded = true;
+    renderEquipList();
+    showToast(items.length + '개 장비 로드 완료');
+  });
+}
+
+function buildCategoryFilter() {
+  var bar = document.getElementById('categoryFilter');
+  bar.innerHTML = '';
+  CATEGORIES.forEach(function(cat){
+    var chip = document.createElement('div');
+    chip.className = 'filter-chip' + (cat==='전체' ? ' active' : '');
+    chip.textContent = cat;
+    chip.onclick = function(){
+      document.querySelectorAll('#categoryFilter .filter-chip').forEach(function(c){c.classList.remove('active');});
+      chip.classList.add('active');
+      currentCategoryFilter = cat;
+      renderEquipList();
+    };
+    bar.appendChild(chip);
+  });
+}
+
+function buildTeamFilter() {
+  var bar = document.getElementById('teamFilter');
+  bar.innerHTML = '';
+  ['전체'].concat(TEAMS).forEach(function(team){
+    var chip = document.createElement('div');
+    chip.className = 'filter-chip' + (team==='전체' ? ' active' : '');
+    chip.textContent = team;
+    chip.onclick = function(){
+      document.querySelectorAll('#teamFilter .filter-chip').forEach(function(c){c.classList.remove('active');});
+      chip.classList.add('active');
+      currentTeamFilter = team;
+      renderTeamList();
+    };
+    bar.appendChild(chip);
+  });
+}
+
+function getFilteredEquipment() {
+  var search = (document.getElementById('searchInput').value||'').toLowerCase();
+  return allEquipment.filter(function(item){
+    var catOk = currentCategoryFilter==='전체' || item.category===currentCategoryFilter;
+    var srchOk = !search ||
+      (item.name&&item.name.toLowerCase().indexOf(search)>=0) ||
+      (item.assetNo&&item.assetNo.toLowerCase().indexOf(search)>=0);
+    return catOk && srchOk;
+  });
+}
+
+function renderEquipList() {
+  var list = document.getElementById('equipList');
+  var items = getFilteredEquipment();
+  if (!items.length) { list.innerHTML = '<div class="loading" style="color:#aaa">장비 없음</div>'; return; }
+  list.innerHTML = '';
+  items.forEach(function(item){ list.appendChild(makeEquipCard(item, 'cat')); });
+}
+
+function renderTeamList() {
+  var list = document.getElementById('teamList');
+  list.innerHTML = '';
+  var teams = currentTeamFilter==='전체' ? TEAMS : [currentTeamFilter];
+  var found = false;
+  teams.forEach(function(team){
+    var items = allEquipment.filter(function(i){return i.location===team;});
+    if (!items.length) return;
+    found = true;
+    var sec = document.createElement('div');
+    sec.className = 'team-section';
+    sec.innerHTML = '<div class="team-header">' + team + ' (' + items.length + '대)</div>';
+    items.forEach(function(item){ sec.appendChild(makeEquipCard(item, 'team')); });
+    list.appendChild(sec);
+  });
+  if (!found) list.innerHTML = '<div class="loading" style="color:#aaa">해당 팀 장비 없음</div>';
+}
+
+function makeEquipCard(item, colorMode) {
+  var card = document.createElement('div');
+  var isSel = selectedIds.indexOf(item.assetNo) >= 0;
+  card.className = 'equip-card' + (isSel ? ' selected' : '');
+  var accentColor = colorMode === 'team'
+    ? (TEAM_COLORS[item.location] || '#0f3460')
+    : (CAT_COLORS[item.category] || '#0f3460');
+  card.style.borderLeft = '4px solid ' + accentColor;
+
+  var subInfo = '';
+  if (item.headsetModel)  subInfo = '헤드셋: ' + item.headsetModel + ' / ' + item.headsetSerial;
+  if (item.notebookInfo)  subInfo = '노트북: ' + item.notebookInfo;
+
+  // 마지막 처리 정보
+  var actionInfo = '';
+  if (item.status && item.status !== '보유' && item.lastAction) {
+    actionInfo = item.lastAction;
+  } else if (item.status && item.status !== '보유') {
+    var d = new Date();
+    var mm = ('0'+(d.getMonth()+1)).slice(-2);
+    var dd = ('0'+d.getDate()).slice(-2);
+    actionInfo = item.location + ' ' + item.status + ' (' + mm+'/'+dd + ') - ' + (item.lastUser||'') + ' (' + (item.lastNote||'특이사항 없음') + ')';
+  }
+
+  card.innerHTML =
+    '<div class="equip-check">' + (isSel?'✓':'') + '</div>' +
+    '<div class="equip-info">' +
+      '<div class="equip-name">' + esc(item.name||'') + '</div>' +
+      '<div class="equip-asset">자산번호: ' + esc(item.assetNo||'') + ' | ' + esc(item.location||'-') + '</div>' +
+      (actionInfo ? '<div class="equip-sub" style="color:#0f3460;font-size:11px">' + esc(actionInfo) + '</div>' : '') +
+      (subInfo ? '<div class="equip-sub">' + esc(subInfo) + '</div>' : '') +
+    '</div>' +
+    '<div style="text-align:right">' +
+      '<div class="equip-status status-' + esc(item.status||'보유') + '">' + esc(item.status||'보유') + '</div>' +
+      '<button style="margin-top:6px;padding:4px 8px;border:1px solid #ccc;border-radius:5px;background:#fff;font-size:11px;cursor:pointer" onclick="openEmailModal(\"' + item.assetNo + '\")">✉</button>' +
+    '</div>';
+
+  card.onclick = function(e){
+    if (e.target.tagName==='BUTTON') return;
+    toggleSelect(item.assetNo, card);
+  };
+  return card;
+}
+
+function toggleSelect(assetNo, card) {
+  var idx = selectedIds.indexOf(assetNo);
+  if (idx>=0) { selectedIds.splice(idx,1); card.classList.remove('selected'); card.querySelector('.equip-check').textContent=''; }
+  else { selectedIds.push(assetNo); card.classList.add('selected'); card.querySelector('.equip-check').textContent='✓'; }
+  updateSelectBar();
+}
+
+function updateSelectBar() {
+  var bar = document.getElementById('selectBar');
+  if (selectedIds.length>0) { bar.classList.add('active'); document.getElementById('selectCount').textContent=selectedIds.length+'개 선택'; }
+  else bar.classList.remove('active');
+}
+
+function clearSelection() {
+  selectedIds = [];
+  document.querySelectorAll('.equip-card.selected').forEach(function(c){
+    c.classList.remove('selected'); c.querySelector('.equip-check').textContent='';
+  });
+  updateSelectBar();
+}
+
+function openActionModal() {
+  if (!selectedIds.length) { showToast('장비를 선택하세요'); return; }
+  currentActionType='수령'; currentReturnReason='팀해체'; currentNoteType='없음';
+  document.querySelectorAll('#actionType .radio-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelector('#actionType .radio-btn[data-val="수령"]').classList.add('active');
+  document.querySelectorAll('#returnReason .radio-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelector('#returnReason .radio-btn[data-val="팀해체"]').classList.add('active');
+  document.querySelectorAll('#noteType .radio-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelector('#noteType .radio-btn[data-val="없음"]').classList.add('active');
+  document.getElementById('returnReasonSection').style.display='none';
+  document.getElementById('returnReasonCustom').style.display='none';
+  document.getElementById('noteCustom').style.display='none';
+  document.getElementById('returnReasonCustom').value='';
+  document.getElementById('noteCustom').value='';
+  document.getElementById('teamSection').style.display='block';
+
+  // 로그인한 사람 팀으로 자동선택
+  var sel = document.getElementById('actionTeam');
+  sel.value = currentUser.team;
+
+  var selList = document.getElementById('selectedList');
+  selList.innerHTML = '';
+  selectedIds.forEach(function(id){
+    var item = allEquipment.filter(function(e){return e.assetNo===id;})[0];
+    var div = document.createElement('div'); div.className='item';
+    div.textContent = item ? (item.name + ' (' + id + ')') : id;
+    selList.appendChild(div);
+  });
+  openModal('actionModal');
+}
+
+function getNewLocation(action, team, returnReason) {
+  if (action === '반납') {
+    if (returnReason === '의공실') return '의공실';
+    return '사무실'; // 팀해체, 폐기, 장비점검, 기타 모두 사무실
+  }
+  return team; // 수령, 보유, 수령예정은 선택한 팀
+}
+
+function submitAction() {
+  var team = document.getElementById('actionTeam').value;
+  var note = currentNoteType==='없음' ? '특이사항 없음' : (document.getElementById('noteCustom').value||'특이사항 있음');
+  var returnReason = currentReturnReason==='기타' ? (document.getElementById('returnReasonCustom').value||'기타') : currentReturnReason;
+  var entries = [];
+
+  selectedIds.forEach(function(assetNo){
+    var item = allEquipment.filter(function(e){return e.assetNo===assetNo;})[0];
+    if (!item) return;
+
+    var newLocation = getNewLocation(currentActionType, team, returnReason);
+
+    // 스프레드시트 장비시트 셀 값: "1팀 수령 (김민철-특이사항 없음)"
+    var cellValue;
+    if (currentActionType==='반납') {
+      cellValue = team+' 반납 (반납사유-'+returnReason+'/'+currentUser.name+'-'+note+')';
+    } else if (currentActionType==='수령') {
+      cellValue = team+' 수령 ('+currentUser.name+'-'+note+')';
+    } else if (currentActionType==='수령예정') {
+      cellValue = team+' 수령예정 ('+currentUser.name+'-'+note+')';
+    } else {
+      cellValue = team+' 보유 ('+currentUser.name+'-'+note+')';
+    }
+
+    entries.push({
+      category: item.category,
+      assetNo: assetNo,
+      action: currentActionType,
+      team: team,
+      newLocation: newLocation,
+      cellValue: cellValue,
+      userName: currentUser.name,
+      note: note,
+      returnReason: returnReason
+    });
+
+    // 앱 상에서도 즉시 업데이트
+    item.status = currentActionType;
+    item.location = newLocation;
+    item.lastUser = currentUser.name;
+    item.lastNote = note;
+    var nd = new Date();
+    var nm = ('0'+(nd.getMonth()+1)).slice(-2);
+    var ndd = ('0'+nd.getDate()).slice(-2);
+    item.lastAction = newLocation + ' ' + currentActionType + ' (' + nm+'/'+ndd + ') - ' + currentUser.name + ' (' + note + ')';
+  });
+
+  // 로컬 저장
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem('equipStatus')||'{}'); } catch(e) {}
+  entries.forEach(function(e){
+    var nd2=new Date(); var nm2=('0'+(nd2.getMonth()+1)).slice(-2); var ndd2=('0'+nd2.getDate()).slice(-2);
+    saved[e.assetNo]={status:e.action, location:e.newLocation, lastUser:e.userName, lastNote:e.note,
+      lastAction:e.newLocation+' '+e.action+' ('+nm2+'/'+ndd2+') - '+e.userName+' ('+e.note+')'};
+  });
+  localStorage.setItem('equipStatus', JSON.stringify(saved));
+
+  closeModal('actionModal');
+  clearSelection();
+  renderEquipList();
+  showToast('처리 완료');
+
+  // Apps Script 전송
+  api({action:'update', data:JSON.stringify(entries)}, function(data){
+    if (data && data.status==='ok') showToast('스프레드시트 기록 완료');
+    else showToast('앱 업데이트 완료 (시트 기록 실패)');
+  });
+}
+
+function openEmailModal(assetNo) {
+  emailTargetEquip = allEquipment.filter(function(e){return e.assetNo===assetNo;})[0];
+  if (!emailTargetEquip) return;
+  var item = emailTargetEquip;
+  var d = new Date();
+  var dateStr = (d.getMonth()+1)+'/'+d.getDate();
+  document.getElementById('emailSubject').value = '[장비 알림] ' + item.name + ' (' + item.assetNo + ') - ' + dateStr;
+  var body = '장비명: ' + item.name + '\n';
+  body += '자산번호: ' + item.assetNo + '\n';
+  body += '카테고리: ' + (item.category||'-') + '\n';
+  body += '현재위치: ' + (item.location||'-') + '\n';
+  body += '상태: ' + (item.status||'보유') + '\n';
+  if (item.lastNote && item.lastNote !== '특이사항 없음') {
+    body += '특이사항: ' + item.lastNote + '\n';
+  }
+  if (item.lastUser) body += '처리자: ' + item.lastUser + '\n';
+  body += '\n---\n장비관리 앱 자동 발송';
+  document.getElementById('emailBody').value = body;
+  document.getElementById('emailTo').value = '';
+  openModal('emailModal');
+}
+
+function submitEmail() {
+  var to = document.getElementById('emailTo').value.trim();
+  if (!to) { showToast('이메일 주소를 입력하세요'); return; }
+  var subj = document.getElementById('emailSubject').value;
+  var body = document.getElementById('emailBody').value;
+  api({action:'sendEmail', to:encodeURIComponent(to), subject:encodeURIComponent(subj), body:encodeURIComponent(body)}, function(data){
+    if (data && data.status==='ok') { showToast('전송 완료'); closeModal('emailModal'); }
+    else { showToast('전송 실패 - 메일앱으로 열기를 사용하세요'); }
+  });
+}
+
+function openMailto() {
+  var to = document.getElementById('emailTo').value.trim();
+  var subj = encodeURIComponent(document.getElementById('emailSubject').value);
+  var body = encodeURIComponent(document.getElementById('emailBody').value);
+  window.location.href = 'mailto:'+to+'?subject='+subj+'&body='+body;
+  closeModal('emailModal');
+}
+
+function openAdminModal() { renderPendingList(); openModal('adminModal'); }
+
+function renderPendingList() {
+  var container = document.getElementById('pendingList');
+  var users = getLocalUsers();
+  var pending = users.filter(function(u){return !u.approved;});
+  if (!pending.length) { container.innerHTML='<p style="text-align:center;padding:20px;color:#888">대기 없음</p>'; return; }
+  container.innerHTML='';
+  pending.forEach(function(user){
+    var card=document.createElement('div'); card.className='pending-card';
+    card.innerHTML='<div class="name">'+esc(user.name)+'</div><div class="info">사번: '+esc(user.id)+' | 팀: '+esc(user.team)+'</div>' +
+      '<div class="approve-btns">'+
+      '<button class="btn btn-primary btn-sm" onclick="doApprove(\"'+user.id+'\",true)">승인</button>'+
+      '<button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="doApprove(\"'+user.id+'\",false)">거부</button>'+
+      '</div>';
+    container.appendChild(card);
+  });
+}
+
+function doApprove(userId, approve) {
+  var users = getLocalUsers();
+  if (approve) {
+    for (var i=0;i<users.length;i++) { if(users[i].id===userId){users[i].approved=true;break;} }
+  } else {
+    users = users.filter(function(u){return u.id!==userId;});
+  }
+  saveLocalUsers(users);
+  showToast(approve?'승인 완료':'거부 완료');
+  renderPendingList();
+}
+
+function openModal(id){ document.getElementById(id).classList.add('active'); }
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function showToast(msg){
+  var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2500);
+}
+
+init();
+
+// ===== CALENDAR =====
+var calYear = 2025;
+var calMonth = 0;
+
+var CAT_COLORS = {
+  '청력기':     '#2563eb',
+  '청력부스':   '#60a5fa',
+  '중이기기':   '#16a34a',
+  '소음계':     '#f59e0b',
+  '원심분리기': '#7c3aed',
+  'HRV':        '#0891b2',
+  'EKG':        '#db2777',
+  '폐활량':     '#dc2626',
+  '실린지':     '#ea580c',
+  '프린터기':   '#64748b',
+  '업무용노트북':'#1e3a5f',
+  '와이브로':   '#0d9488',
+  '포터블모니터':'#9333ea'
+};
+
+var TEAM_COLORS = {
+  '1팀':'#2563eb','2팀':'#16a34a','3팀':'#dc2626','4팀':'#7c3aed',
+  '5팀':'#ea580c','6팀':'#0891b2','수원':'#f59e0b','평택':'#db2777',
+  '아산1':'#0d9488','사무실':'#64748b','의공실':'#9333ea','센터':'#1e3a5f'
+};
+
+function getCatColor(cat) {
+  return CAT_COLORS[cat] || '#888';
+}
+
+function renderCalendar() {
+  var d = new Date();
+  calYear = d.getFullYear();
+  calMonth = d.getMonth();
+  drawCalendar();
+}
+
+function drawCalendar() {
+  var months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('calTitle').textContent = calYear + '년 ' + months[calMonth];
+  document.getElementById('calDetail').innerHTML = '';
+
+  var grid = document.getElementById('calGrid');
+  var dayNames = ['일','월','화','수','목','금','토'];
+  var mm = ('0'+(calMonth+1)).slice(-2);
+
+  // 이달 특이사항 있음인 장비 날짜별 수집
+  var eventDays = {}; // day -> [{item, color}]
+  allEquipment.forEach(function(item) {
+    if (!item.lastNote || item.lastNote === '특이사항 없음') return;
+    if (!item.lastAction) return;
+    var m = item.lastAction.match(/\((\d{2})\/(\d{2})\)/);
+    if (!m || m[1] !== mm) return;
+    // check year
+    var itemYear = item.lastYear || calYear;
+    var day = parseInt(m[2]);
+    if (!eventDays[day]) eventDays[day] = [];
+    eventDays[day].push({item: item, color: getCatColor(item.category)});
+  });
+
+  var first = new Date(calYear, calMonth, 1).getDay();
+  var total = new Date(calYear, calMonth+1, 0).getDate();
+  var today = new Date();
+
+  var h = '<table style="width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed">';
+  h += '<tr>';
+  dayNames.forEach(function(d,i){
+    var c = i===0?'#e53e3e':(i===6?'#2563eb':'#888');
+    h += '<th style="padding:6px 2px;text-align:center;color:'+c+';font-weight:600;font-size:12px">'+d+'</th>';
+  });
+  h += '</tr><tr>';
+
+  for (var i=0;i<first;i++) { h += '<td></td>'; }
+  var col = first;
+
+  for (var day=1; day<=total; day++) {
+    var isToday = (calYear===today.getFullYear() && calMonth===today.getMonth() && day===today.getDate());
+    var evs = eventDays[day] || [];
+    var hasEv = evs.length > 0;
+
+    // 날짜 숫자 색
+    var dow = (first + day - 1) % 7;
+    var numColor = isToday ? '#fff' : (dow===0?'#e53e3e':(dow===6?'#2563eb':'#222'));
+    var bgCircle = isToday ? '#0f3460' : 'transparent';
+
+    // 카테고리별 점 (최대 4개)
+    var dots = '';
+    if (hasEv) {
+      var shown = {};
+      var dotList = [];
+      evs.forEach(function(ev){
+        if (!shown[ev.color]) { shown[ev.color]=true; dotList.push(ev.color); }
+      });
+      dots = '<div style="display:flex;justify-content:center;gap:2px;margin-top:2px;flex-wrap:wrap">';
+      dotList.slice(0,4).forEach(function(c){
+        dots += '<div style="width:5px;height:5px;border-radius:50%;background:'+c+'"></div>';
+      });
+      dots += '</div>';
+    }
+
+    h += '<td style="padding:2px;text-align:center;vertical-align:top;cursor:'+(hasEv?'pointer':'default')+'" onclick="showDayDetail('+day+')">' +
+      '<div style="width:26px;height:26px;line-height:26px;border-radius:50%;background:'+bgCircle+';color:'+numColor+';margin:0 auto;font-size:13px;font-weight:'+(isToday?'700':'400')+'">'+day+'</div>' +
+      dots + '</td>';
+
+    col++;
+    if (col % 7 === 0 && day < total) { h += '</tr><tr>'; }
+  }
+  h += '</tr></table>';
+  grid.innerHTML = h;
+
+  document.getElementById('calPrevBtn').onclick = function(){
+    calMonth--; if(calMonth<0){calMonth=11;calYear--;} drawCalendar();
+  };
+  document.getElementById('calNextBtn').onclick = function(){
+    calMonth++; if(calMonth>11){calMonth=0;calYear++;} drawCalendar();
+  };
+
+  // 범례 (한번만)
+  var legendEl = document.getElementById('calLegend');
+  if (legendEl && !legendEl.hasChildNodes()) {
+    var legendHtml = '<div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px 4px;font-size:11px">';
+    Object.keys(CAT_COLORS).forEach(function(cat){
+      legendHtml += '<div style="display:flex;align-items:center;gap:3px"><div style="width:8px;height:8px;border-radius:50%;background:'+CAT_COLORS[cat]+'"></div>'+cat+'</div>';
+    });
+    legendHtml += '</div>';
+    legendEl.innerHTML = legendHtml;
+  }
+}
+
+function showDayDetail(day) {
+  var mm = ('0'+(calMonth+1)).slice(-2);
+  var dd = ('0'+day).slice(-2);
+  var dateStr = mm+'/'+dd;
+  var detail = document.getElementById('calDetail');
+
+  var items = allEquipment.filter(function(item){
+    if (!item.lastNote || item.lastNote === '특이사항 없음') return false;
+    if (!item.lastAction) return false;
+    return item.lastAction.indexOf('('+dateStr+')') !== -1;
+  });
+
+  if (!items.length) { detail.innerHTML = '<div style="padding:12px;color:#aaa;text-align:center;font-size:13px">특이사항 없음</div>'; return; }
+
+  var h = '<div style="font-weight:700;color:#0f3460;margin-bottom:10px;font-size:14px">'+(calMonth+1)+'/'+day+' 특이사항 내역 ('+items.length+'건)</div>';
+  items.forEach(function(item){
+    var c = getCatColor(item.category);
+    h += '<div style="background:#fff;border-radius:10px;padding:12px;margin-bottom:8px;border-left:4px solid '+c+';box-shadow:0 1px 4px rgba(0,0,0,0.08)">' +
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">' +
+        '<div style="width:8px;height:8px;border-radius:50%;background:'+c+';flex-shrink:0"></div>' +
+        '<span style="font-weight:700;font-size:13px">'+esc(item.name)+'</span>' +
+        '<span style="color:#888;font-size:11px">('+esc(item.assetNo)+')</span>' +
+      '</div>' +
+      '<div style="font-size:12px;color:#444;padding-left:14px">'+esc(item.category)+' | '+esc(item.location||'-')+'</div>' +
+      '<div style="font-size:12px;color:#e53e3e;padding-left:14px;margin-top:3px;font-weight:600">특이사항: '+esc(item.lastNote||'')+'</div>' +
+      '<div style="font-size:11px;color:#888;padding-left:14px;margin-top:2px">'+esc(item.lastUser||'')+' · '+dateStr+'</div>' +
+    '</div>';
+  });
+  detail.innerHTML = h;
+}
+
+
+</script>
+</body>
+</html>
