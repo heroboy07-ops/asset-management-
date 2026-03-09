@@ -112,7 +112,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;back
 </head>
 <body>
 
-<div id="loginScreen" class="active">
+<div id="loginScreen">
   <div class="login-box">
     <div class="login-logo">
       <h1>⚙️ 장비 관리</h1>
@@ -293,7 +293,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;back
 
 <script>
 'use strict';
-var SCRIPT_URL='https://script.google.com/macros/s/AKfycbxB0vA1MbY2X2gfHJSwYCjHG4sUoVgJbKiQrxm5jaRdrVvIL6qmRg-kgB5Uw7Wa_h6V/exec';
+var SCRIPT_URL='https://script.google.com/macros/s/AKfycbx1hOsfD7_4hFUUXWOe6v4wq2fR74HXLoUz8Qhx4eWRoqAY3dF3BItadBKEl800j1oE/exec';
 var TEAMS=['1팀','2팀','3팀','4팀','5팀','6팀','수원','평택','아산1','사무실','의공실','센터'];
 var CATS=['청력기','청력부스','중이기기','소음계','원심분리기','HRV','EKG','폐활량','실린지','프린터기','업무용노트북','와이브로','포터블모니터'];
 var CC={'청력기':'#2563eb','청력부스':'#60a5fa','중이기기':'#16a34a','소음계':'#f59e0b','원심분리기':'#7c3aed','HRV':'#0891b2','EKG':'#db2777','폐활량':'#dc2626','실린지':'#ea580c','프린터기':'#64748b','업무용노트북':'#1e3a5f','와이브로':'#0d9488','포터블모니터':'#9333ea'};
@@ -301,6 +301,7 @@ var TC={'1팀':'#2563eb','2팀':'#16a34a','3팀':'#dc2626','4팀':'#7c3aed','5�
 var HS={'50604-00152':{m:'SA-203',s:'WT109429/WT109430'},'50604-00153':{m:'SA-203',s:'WT109431/WT109432'},'50604-00154':{m:'SA-203',s:'WT109433/WT109434'},'50604-00155':{m:'SA-203',s:'WT109435/WT109436'},'50604-00156':{m:'SA-203',s:'WT109437/WT109438'},'50604-00157':{m:'SA-203',s:'WT109439/WT109440'},'50604-00158':{m:'SA-203',s:'WT109441/WT109442'},'50604-00159':{m:'SA-203',s:'WT109443/WT109444'},'50604-00160':{m:'SA-203',s:'WT109445/WT109446'},'50604-00161':{m:'SA-203',s:'WT109447/WT109448'},'50604-00162':{m:'SA-203',s:'WT109449/WT109450'},'50604-00163':{m:'SA-203',s:'WT109451/WT109452'}};
 
 var me=null,all=[],sel=[],atype='수령',rreason='팀해체',ntype='없음',loaded=false;
+try{var _sm=localStorage.getItem('_eqme');if(_sm)me=JSON.parse(_sm);}catch(e){}
 var cY=new Date().getFullYear(),cM=new Date().getMonth();
 var curCat=null,curTeam=null;
 
@@ -327,6 +328,7 @@ function doLogin(){
     if(users[i].id===id&&users[i].pw===pw){
       if(!users[i].approved){toast('관리자 승인 대기 중입니다');return;}
       me={id:users[i].id,name:users[i].name,team:users[i].team,isAdmin:!!users[i].isAdmin};
+      localStorage.setItem('_eqme',JSON.stringify(me));
       goMain();return;
     }
   }
@@ -344,10 +346,11 @@ function doReg(){
   var first=users.length===0;
   users.push({id:id,name:name,pw:pw,team:team,approved:first,isAdmin:first});
   setU(users);hide('regOverlay');
-  if(first){me={id:id,name:name,team:team,isAdmin:true};goMain();toast('관리자로 로그인됐습니다');}
+  if(first){me={id:id,name:name,team:team,isAdmin:true};localStorage.setItem('_eqme',JSON.stringify(me));goMain();toast('관리자로 로그인됐습니다');}
   else toast('가입 신청 완료. 관리자 승인 후 로그인하세요.');
 }
 function goLogin(){
+  me=null;localStorage.removeItem('_eqme');
   document.getElementById('loginScreen').classList.add('active');
   document.getElementById('mainScreen').style.display='none';
   document.getElementById('loginId').value='';document.getElementById('loginPw').value='';
@@ -375,14 +378,17 @@ function loadData(){
       if(!it.status)it.status='보유';
       var an=(it.assetNo||'').trim();
       it.assetNo=an;
-      if(it.category==='청력기'&&HS[an]){it.headsetModel=HS[an].m;it.headsetSerial=HS[an].s;}
-      else if(it.category==='청력기'&&it.headsetInfo){/* 시트 메모 사용 */}
+      // 청력기: HS 하드코딩 우선, 없으면 시트 메모
+      if(it.category==='청력기'){
+        if(HS[an]){it.memo=HS[an].m+' / '+HS[an].s;}
+        // else memo 그대로
+      }
       if(sv[an]){var s2=sv[an];it.status=s2.status||it.status;it.location=s2.location||it.location;it.lastUser=s2.lastUser||'';it.lastNote=s2.lastNote||'';it.lastAction=s2.lastAction||'';}
     });
     var byAsset={};items.forEach(function(it){byAsset[it.assetNo]=it;});
     Object.keys(HS).forEach(function(an){
-      if(byAsset[an]){byAsset[an].headsetModel=HS[an].m;byAsset[an].headsetSerial=HS[an].s;byAsset[an].category='청력기';}
-      else{var itN={name:'청력기',assetNo:an,category:'청력기',location:'-',status:'보유',headsetModel:HS[an].m,headsetSerial:HS[an].s};if(sv[an]){var s3=sv[an];itN.status=s3.status||itN.status;itN.location=s3.location||itN.location;itN.lastUser=s3.lastUser||'';itN.lastNote=s3.lastNote||'';itN.lastAction=s3.lastAction||'';}items.push(itN);}
+      if(byAsset[an]){byAsset[an].memo=HS[an].m+' / '+HS[an].s;byAsset[an].category='청력기';}
+      else{var itN={name:'청력기',assetNo:an,category:'청력기',location:'-',status:'보유',memo:HS[an].m+' / '+HS[an].s};if(sv[an]){var s3=sv[an];itN.status=s3.status||itN.status;itN.location=s3.location||itN.location;itN.lastUser=s3.lastUser||'';itN.lastNote=s3.lastNote||'';itN.lastAction=s3.lastAction||'';}items.push(itN);}
     });
     all=items;loaded=true;
     renderCatSummary();
@@ -478,9 +484,10 @@ function mkCard(it,cm){
   var ac=cm==='team'?(TC[it.location]||'#0f3460'):(CC[it.category]||'#0f3460');
   card.style.borderLeftColor=ac;
   var sub='';
-  if(it.headsetModel)sub='헤드셋: '+it.headsetModel+' / '+it.headsetSerial;
-  else if(it.headsetInfo)sub='헤드셋: '+it.headsetInfo;
-  if(it.notebookInfo)sub=(sub?sub+' | ':'')+'노트북: '+it.notebookInfo;
+  if(it.category==='청력기'&&it.memo)sub='헤드셋: '+it.memo;
+  else if(it.category==='업무용노트북'&&it.memo)sub='노트북: '+it.memo;
+  else if(it.category==='폐활량'&&it.memo)sub='노트북: '+it.memo;
+  else if(it.memo)sub=it.memo;
   card.innerHTML=
     '<div class="chk">'+(isSel?'✓':'')+'</div>'+
     '<div class="cinfo">'+
@@ -696,6 +703,8 @@ document.getElementById('backBtn').onclick=function(){
   document.getElementById('backBtn').classList.remove('on');
 };
 document.getElementById('searchInput').oninput=renderEList;
+// 세션 자동 복원
+if(me){goMain();}else{document.getElementById('loginScreen').classList.add('active');}
 document.getElementById('loginBtn').onclick=doLogin;
 document.getElementById('loginId').onkeydown=function(e){if(e.key==='Enter')doLogin();};
 document.getElementById('loginPw').onkeydown=function(e){if(e.key==='Enter')doLogin();};
