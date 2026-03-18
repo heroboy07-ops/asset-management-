@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>장비 관리 시스템</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Malgun Gothic', sans-serif; background: #f0f2f5; padding: 10px; }
+    .header { background: #d63031; color: white; padding: 15px; text-align: center; font-weight: bold; border-radius: 10px; margin-bottom: 10px; font-size: 14px; }
+    .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+    .tab { flex: 1; padding: 12px; background: #fff; border: 2px solid #ddd; border-radius: 8px; text-align: center; font-weight: bold; cursor: pointer; font-size: 13px; }
+    .tab.active { background: #d63031; color: white; }
+    .box { background: #fff; padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+    select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; margin-bottom: 10px; }
+    .card { background: #fff; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 8px solid #d63031; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .card.normal { border-left-color: #2d3436; }
+    .card.issue { border-left-color: #d63031; background: #fff5f5; }
+    .card-title { font-weight: bold; font-size: 15px; color: #333; margin-bottom: 5px; }
+    .card-note { background: #fdf2f2; padding: 10px; border-radius: 5px; color: #d63031; font-weight: bold; font-size: 14px; border: 1px solid #ff7675; }
+    .card-note.normal { background: #f8f9fa; color: #2d3436; border-color: #dfe6e9; }
+    .download-btn { display: inline-block; margin-top: 10px; padding: 12px 24px; background: #00b894; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; text-decoration: none; }
+    .download-btn:hover { background: #00a383; }
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+    .modal-content { background: white; margin: 10% auto; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .search-box { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 15px; }
+    .pagination { display: flex; justify-content: center; gap: 5px; margin-top: 15px; }
+    .page-btn { padding: 8px 12px; background: #f8f9fa; border: 2px solid #dfe6e9; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .page-btn.active { background: #d63031; color: white; border-color: #d63031; }
+    .page-btn:hover { background: #e8f5e9; }
+    .modal-title { font-size: 20px; font-weight: bold; margin-bottom: 20px; color: #2d3436; }
+    .modal-close { float: right; font-size: 28px; font-weight: bold; color: #aaa; cursor: pointer; }
+    .modal-close:hover { color: #000; }
+    .recipient-btn { display: block; width: 100%; padding: 15px; margin: 8px 0; background: #f8f9fa; border: 2px solid #dfe6e9; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: all 0.3s; }
+    .recipient-btn:hover { background: #d63031; color: white; border-color: #d63031; }
+    .equipment-checkbox { width: 20px; height: 20px; margin-right: 10px; cursor: pointer; }
+    .select-all-btn { padding: 10px 20px; background: #0984e3; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-right: 10px; }
+    .select-all-btn:hover { background: #0770c9; }
+    .send-email-btn { padding: 12px 30px; background: #00b894; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; }
+    .send-email-btn:hover { background: #00a383; }
+    .button-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px; }
+    .calendar { display: grid; grid-template-columns: repeat(7, 1fr); background: #eee; gap: 1px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+    .cal-header { padding: 10px; text-align: center; font-weight: bold; background: #f8f9fa; font-size: 12px; }
+    .cal-day { height: 80px; background: #fff; padding: 5px; text-align: left; font-size: 14px; cursor: pointer; position: relative; }
+    .cal-day.issue { background: #fff0f0; }
+    .cal-day.issue::after { content: '⚠️'; position: absolute; bottom: 5px; right: 5px; font-size: 12px; color: #d63031; }
+    .cal-day.selected { background: #d63031 !important; color: white !important; }
+    .month-nav { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; }
+    .month-nav button { padding: 10px 20px; background: #d63031; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<div id="mainApp">
+<div class="header" id="status">데이터 연결 중... v20260220-포터블모니터추가</div>
+<div class="tabs">
+  <div class="tab active" id="tab-equip" onclick="setMode('equip')">장비 → 장소</div>
+  <div class="tab" id="tab-location" onclick="setMode('location')">장소</div>
+  <div class="tab" id="tab-date" onclick="setMode('date')">날짜별 기록</div>
+</div>
+<div id="searchBox" class="box"></div>
+<div id="results"></div>
+
+<div id="emailModal" class="modal" onclick="if(event.target === this) closeEmailModal();">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeEmailModal()">&times;</span>
+    <div class="modal-title">📧 수신자 선택</div>
+    <div id="recipientList"></div>
+  </div>
+</div>
+</div>
+
+<script>
+const APP_VERSION = 'v20260220-포터블모니터추가';
+const SHEET_ID = '12xhA0X6iOrg-4mq9KWZsQ9nPb2818P5VGUDXQMhjeTw';
+const SHEETS = { 
+  '청력기': '1720829217', '청력부스': '783939503', '중이기기': '951007328', 
+  '소음계': '389015843', '원심분리기': '1430550353', 'HRV': '575182905', 
+  'EKG': '37674733', '폐활량': '2106009043', '실린지': '829162327', 
+  '프린터기': '283353512', '업무용노트북': '239338022', '와이브로': '763688386',
+  '포터블모니터': '1994479091'
+};
+
+const EQUIPMENT_COLORS = {
+  '청력기': '#3498db',
+  '청력부스': '#9b59b6',
+  '중이기기': '#1abc9c',
+  '소음계': '#f39c12',
+  '원심분리기': '#e67e22',
+  'HRV': '#16a085',
+  'EKG': '#8e44ad',
+  '폐활량': '#2980b9',
+  '실린지': '#27ae60',
+  '프린터기': '#2c3e50',
+  '업무용노트북': '#c0392b',
+  '와이브로': '#d35400',
+  '포터블모니터': '#e74c3c'
+};
+
+const LUNG_ASSET_MAPPING = {
+  '50601-00770': { model: 'NT300E5K-K34S', sn: '0N8V91IHB00202E' },
+  '50601-00771': { model: 'NT270E5R-KD1S', sn: 'JKGK91KFC00009R' },
+  '50601-00772': { model: 'NT270E5R-KD1S', sn: 'JKGK91KFC00410Y' },
+  '50601-00773': { model: 'NT270E5R-KD1S', sn: 'JKGK91KFC00281R' },
+  '50601-00774': { model: 'NT300E5K-L26W', sn: '0QP191IU100958E' },
+  '50601-00775': { model: 'NT300E5X-AD2S', sn: 'HxX391RD100005B' },
+  '50601-00776': { model: 'NT300E5C-A39S', sn: 'JkMM91DF300107K' },
+  '50601-00822': { model: 'NT300E5K-K34S', sn: '0N8V91IHB00226K' },
+  '50601-00823': { model: 'NT300E5R-KD3A', sn: 'OUMN91JJC00115M' },
+  '50601-00863': { model: 'NT300E5K-L26W', sn: '0QP191IU201075D' },
+  '50601-00864': { model: 'NT300E5K-L26W', sn: '0QP191IJ200766K' },
+  '50601-00871': { model: 'NT550EAZ-AD2A', sn: '0WGE91AKC00159Y' },
+  '50601-00872': { model: 'NT300E5R-KD3A', sn: '0UMN91CJC00017V' },
+  '50601-00873': { model: 'NT300E5X-AD2S', sn: 'HxX391PD100015E' },
+  '50601-00949': { model: 'NT550EAZ-AD2A', sn: '0WGE91AKC00012H' },
+  '50601-00950': { model: 'NT270E5R-KD1S', sn: 'JKGK91KFC00319X' },
+  '50601-00951': { model: 'NT270E5R-KD1S', sn: 'JKGK91KFC00086Z' },
+  '50601-00964': { model: 'NT300E5K-L26W', sn: '0QP191GJ100332Z' },
+  '50601-00965': { model: 'NT300E5K-L26W', sn: '0QP191AJ101068A' },
+  '50601-00966': { model: 'NT550EAZ-AD2A', sn: '0WGE91AK800199N' },
+  '50601-00967': { model: 'NT550EAZ-AD2A', sn: '0WGE91AKC00042E' },
+  '50601-00968': { model: 'NT550EAZ-AD2A', sn: '0WGE91AK900074X' },
+  '50601-00969': { model: 'NT550EAZ-AD2A', sn: '0WGE91AKC00039D' },
+  '50601-01533': { model: 'DM501TGA', sn: 'KYTK99YXA0000RZ' },
+  '50601-01534': { model: 'DM501TGA', sn: 'KYTK99YXA0000BW' },
+  '50601-01535': { model: 'DM501TGA', sn: 'KYTN99YX90003AH' },
+  '50601-01536': { model: 'DM501TGA', sn: 'KYTN99YX900034K' },
+  '50601-01537': { model: 'NT551XED', sn: '67A29FCX100009Y' },
+  '50601-01538': { model: 'NT551XED', sn: '67A29FCX100008J' },
+  '50601-01539': { model: 'NT551XED', sn: '67A29FCX100025N' },
+  '50601-01632': { model: 'DM501TGA', sn: 'L0MM99YY7000ABV' },
+  '50601-01633': { model: 'DM501TGA', sn: 'L0MM99YY7000JRJ' },
+  '50601-01634': { model: 'DM501TGA', sn: 'L0MM99YY7000A0X' },
+  '50601-01635': { model: 'DM501TGA', sn: 'L0MM99YY7000CGF' },
+  '50601-01636': { model: 'NT751XGK-K03/C', sn: 'KYPD99YY90003P' },
+  '50601-01637': { model: 'NT751XGK-K03/C', sn: 'KYPD99YY90005F' },
+  '50601-01638': { model: 'NT751XGK-K03/C', sn: 'KYPD99YY900006' },
+  '50601-01639': { model: 'NT751XGK-K03/C', sn: 'KYPD99YY90003S' }
+};
+
+const AUDIOMETER_HEADSET_MAPPING = {
+  '50604-00152': 'WT109429/WT109430',
+  '50604-00153': 'WT109528/WT109536',
+  '50604-00181': 'WT305446/WT305444',
+  '50604-00194': 'WT402572/WT402584',
+  '50604-00195': 'WT402783/WT402588',
+  '50604-00196': 'WT402782/WT402781',
+  '50604-00211': 'WT482942/WT482966',
+  '50604-00212': 'WT476053/WT498521',
+  '50604-00221': 'WT565596/WT558124',
+  '50604-00222': 'WT550841/WT567270',
+  '50604-00233': 'WT662399/WT638008',
+  '50604-00234': 'WT694207/WT699298'
+};
+
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzNrE3s08iOZndyR7estzZOMw_vd5BHz6zqwd0ogki5m00C6dOxRiySD4VgIy2Io3AQ/exec';
+
+const EMAIL_SENDERS = {
+  '조해영': 'hy0617.jo@samsung.com',
+  '백수빈': 'subeen2319.baek@samsung.com',
+  '문선미': 'sm0316.moon@samsung.com',
+  '김보현': 'bohyeon6601.kim@samsung.com',
+  '김정민': 'jm0605.kim@samsung.com',
+  '고희진': 'heejin3579.ko@samsung.com',
+  '이지연': 'joanna0812.lee@samsung.com',
+  '신수인': 'suingss0120.shin@samsung.com',
+  '김성현': 'seonghyeon402.kim@samsung.com'
+};
+
+const EMAIL_RECIPIENTS = {
+  '조해영': 'hy0617.jo@samsung.com',
+  '백수빈': 'subeen2319.baek@samsung.com',
+  '문선미': 'sm0316.moon@samsung.com',
+  '김보현': 'bohyeon6601.kim@samsung.com',
+  '김정민': 'jm0605.kim@samsung.com',
+  '고희진': 'heejin3579.ko@samsung.com',
+  '이지연': 'joanna0812.lee@samsung.com',
+  '신수인': 'suingss0120.shin@samsung.com',
+  '김성현': 'seonghyeon402.kim@samsung.com',
+  '안황코': 'sj0206.ahn@samsung.com'
+};
+
+let allData = [];
+let mode = 'equip';
+let currentYear = 2026;
+let currentMonth = 1;
+const IGNORE_TEXT = ["특이사항없음", "특이사항 없음", "이상없음", "이상 없음"];
+const FIXED_LOCATIONS = ['1', '2', '3', '4', '5', '6', '평택', '수원', '아산1', '사무실', '의공실', '센터', '미선택'];
+let currentLocation = null;
+let selectedSender = null;
+let currentSenderPage = 1;
+let currentRecipientPage = 1;
+let senderSearchQuery = '';
+let recipientSearchQuery = '';
+const ITEMS_PER_PAGE = 5;
+
+async function load() {
+  allData = [];
+  const startTime = new Date();
+  document.getElementById('status').innerText = 'Loading... ' + APP_VERSION;
+  
+  for (const [name, gid] of Object.entries(SHEETS)) {
+    try {
+      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}&t=${Date.now()}`;
+      const res = await fetch(url, { cache: 'no-store' });
+      const csv = await res.text();
+      const parsed = Papa.parse(csv.trim(), { header: true, skipEmptyLines: true });
+      
+      parsed.data.forEach(row => {
+        const assetNum = row['자산번호'] || row['자산 번호'] || '';
+        if (assetNum && assetNum.trim()) {
+          allData.push({ ...row, _equip: name });
+        }
+      });
+    } catch (e) {
+      console.error(name + ' failed:', e);
+    }
+  }
+  
+  const loadTime = ((new Date() - startTime) / 1000).toFixed(1);
+  document.getElementById('status').innerText = allData.length + ' devices (' + loadTime + 's) ' + APP_VERSION;
+  show();
+}
+
+function isRealIssue(text) {
+  if (!text || !text.trim()) return false;
+  const clean = text.replace(/\s/g, "").toLowerCase();
+  for (const ig of IGNORE_TEXT) {
+    const cleanIgnore = ig.replace(/\s/g, "").toLowerCase();
+    if (clean === cleanIgnore || clean.includes(cleanIgnore)) return false;
+  }
+  return true;
+}
+
+function parseCurrentLocation(row) {
+  const val = row['현재위치'] || row['현재 위치'] || '';
+  if (!val || !val.trim()) return { location: "미선택", date: null };
+  
+  const str = val.toString().trim();
+  const dateMatch = str.match(/\((\d{1,2})\/(\d{1,2})\)/);
+  const date = dateMatch ? dateMatch[1].padStart(2, '0') + '/' + dateMatch[2].padStart(2, '0') : null;
+  
+  const cleanStr = str.replace(/\(.*?\)/g, '').trim();
+  
+  let location = "미선택";
+  if (cleanStr.includes('아산1')) location = '아산1';
+  else if (cleanStr.includes('평택')) location = '평택';
+  else if (cleanStr.includes('수원')) location = '수원';
+  else if (cleanStr.includes('사무실')) location = '사무실';
+  else if (cleanStr.includes('센터')) location = '센터';
+  else if (cleanStr.includes('의공실')) location = '의공실';
+  else {
+    const match = cleanStr.match(/(?:^|[^\d])([1-6])(?:팀|[^\d]|$)/);
+    if (match) location = match[1];
+  }
+  
+  return { location, date };
+}
+
+function getEquipmentNumber(row) {
+  const equipName = row['기기명'] || '';
+  const match = equipName.match(/\((\d+)\)/);
+  return match ? match[1] : '';
+}
+
+function getDetailByDate(row, targetDate) {
+  if (!targetDate) return null;
+  const dateKeys = Object.keys(row).filter(k => k.match(/^\d{1,2}[\/\-]\d{1,2}$/));
+  for (const key of dateKeys) {
+    const normalized = key.trim().replace('-', '/').split('/').map(p => p.padStart(2, '0')).join('/');
+    if (normalized === targetDate && row[key] && row[key].trim()) {
+      return row[key].trim();
+    }
+  }
+  return null;
+}
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('tab-equip').classList.toggle('active', m === 'equip');
+  document.getElementById('tab-location').classList.toggle('active', m === 'location');
+  document.getElementById('tab-date').classList.toggle('active', m === 'date');
+  show();
+}
+
+function show() {
+  const b = document.getElementById('searchBox');
+  document.getElementById('results').innerHTML = '';
+  
+  if (mode === 'equip') {
+    const equipCounts = {};
+    Object.keys(SHEETS).forEach(name => {
+      equipCounts[name] = allData.filter(r => r._equip === name).length;
+    });
+    b.innerHTML = '<label>장비 선택</label><select id="es" onchange="updateLocations()"><option value="">선택</option>' + Object.keys(SHEETS).map(e => '<option value="' + e + '">' + e + ' (' + equipCounts[e] + '개)</option>').join('') + '</select><div id="lb" style="display:none"><label>장소 필터</label><select id="ls" onchange="displayResults()"><option value="">장소 선택</option></select></div>';
+  } else if (mode === 'location') {
+    const locationCounts = {};
+    FIXED_LOCATIONS.forEach(loc => {
+      locationCounts[loc] = allData.filter(r => parseCurrentLocation(r).location === loc).length;
+    });
+    b.innerHTML = '<label>장소 선택</label><select id="locationSelect" onchange="displayLocationResults()"><option value="">선택</option>' + FIXED_LOCATIONS.map(l => '<option value="' + l + '">' + (/^[1-6]$/.test(l) ? l + '팀' : l) + ' (' + locationCounts[l] + '개)</option>').join('') + '</select>';
+  } else {
+    showCalendar();
+  }
+}
+
+function updateLocations() {
+  const eq = document.getElementById('es').value;
+  if (!eq) {
+    document.getElementById('lb').style.display = 'none';
+    document.getElementById('results').innerHTML = '';
+    return;
+  }
+  
+  let totalEquipCount = 0;
+  const locationCounts = {};
+  
+  if (eq === '전체') {
+    FIXED_LOCATIONS.forEach(loc => {
+      const count = allData.filter(r => parseCurrentLocation(r).location === loc).length;
+      locationCounts[loc] = count;
+      totalEquipCount += count;
+    });
+  } else {
+    FIXED_LOCATIONS.forEach(loc => {
+      const count = allData.filter(r => r._equip === eq && parseCurrentLocation(r).location === loc).length;
+      locationCounts[loc] = count;
+      totalEquipCount += count;
+    });
+  }
+  
+  document.getElementById('ls').innerHTML = '<option value="">장소 선택</option><option value="전체">전체 (' + totalEquipCount + '개)</option>' + FIXED_LOCATIONS.map(l => '<option value="' + l + '">' + (/^[1-6]$/.test(l) ? l + '팀' : l) + ' (' + locationCounts[l] + '개)</option>').join('');
+  document.getElementById('lb').style.display = 'block';
+  document.getElementById('results').innerHTML = '';
+}
+
+function displayResults() {
+  const eq = document.getElementById('es').value;
+  const loc = document.getElementById('ls').value;
+  if (!loc) {
+    document.getElementById('results').innerHTML = '<p style="padding:20px; text-align:center; color:#999;">장소를 선택해주세요</p>';
+    return;
+  }
+  
+  let found;
+  if (loc === '전체') {
+    found = allData.filter(r => r._equip === eq);
+  } else {
+    found = allData.filter(r => r._equip === eq && parseCurrentLocation(r).location === loc);
+  }
+  
+  if (found.length === 0) {
+    document.getElementById('results').innerHTML = '<p style="padding:20px; text-align:center; color:#999;">해당 장소에 장비가 없습니다</p>';
+    return;
+  }
+  
+  let html = '<div class="button-group"><div><button class="select-all-btn" onclick="selectAllEquipment(true)">✓ 전체선택</button><button class="select-all-btn" onclick="selectAllEquipment(false)">✗ 전체해제</button></div><button class="send-email-btn" onclick="showEmailModalWithSelection(\'' + (loc === '전체' ? eq : loc) + '\')">📧 선택항목 메일 전송</button></div>';
+  
+  html += found.map(r => {
+    const data = parseCurrentLocation(r);
+    const locName = /^[1-6]$/.test(data.location) ? data.location + '팀' : data.location;
+    const assetNum = r['자산번호'] || r['자산 번호'] || '';
+    const equipNum = getEquipmentNumber(r);
+    const detail = data.date ? getDetailByDate(r, data.date) : null;
+    let state = "보유";
+    if (detail) {
+      const cleanDetail = detail.replace(/\s/g, '').toLowerCase();
+      if (cleanDetail.includes("반납예정")) state = "반납예정";
+      else if (cleanDetail.includes("수령예정")) state = "수령예정";
+      else if (cleanDetail.includes("반납")) state = "반납";
+      else if (cleanDetail.includes("수령")) state = "수령";
+    }
+    let person = "", issue = detail || "기록 없음";
+    if (detail) {
+      const match = detail.match(/\(([^-]+)-([^)]+)\)/) || detail.match(/([가-힣]+)\s*-\s*(.+)/);
+      if (match) {
+        person = match[1].trim();
+        issue = match[2].trim();
+      }
+    }
+    const equipDisplay = equipNum ? r._equip + '(' + equipNum + ')' : r._equip;
+    const hasIssue = detail && isRealIssue(detail);
+    const cardClass = hasIssue ? 'card issue' : 'card normal';
+    const noteClass = hasIssue ? 'card-note' : 'card-note normal';
+    const equipColor = EQUIPMENT_COLORS[r._equip] || '#2d3436';
+    
+    let modelName = r['모델'] || '';
+    let serialNum = r['제조번호'] || r['제조 번호'] || '';
+    
+    if (r._equip === '폐활량' && LUNG_ASSET_MAPPING[assetNum]) {
+      modelName = LUNG_ASSET_MAPPING[assetNum].model;
+      serialNum = LUNG_ASSET_MAPPING[assetNum].sn;
+    }
+    
+    const modelInfo = (modelName || serialNum) ? ' (모델명 - ' + modelName + ' , S/N - ' + serialNum + ')' : '';
+    
+    const headsetInfo = (r._equip === '청력기' && AUDIOMETER_HEADSET_MAPPING[assetNum]) 
+      ? ' (헤드셋 - ' + AUDIOMETER_HEADSET_MAPPING[assetNum] + ')' 
+      : '';
+    
+    const equipData = JSON.stringify({
+      '기기명': r['기기명'] || '',
+      '모델': modelName,
+      '제조번호': serialNum,
+      '자산번호': assetNum
+    }).replace(/'/g, '&apos;');
+    
+    return '<div class="' + cardClass + '" style="display: flex; align-items: center;"><input type="checkbox" class="equipment-checkbox" data-equipment=\'' + equipData + '\' checked><div style="flex: 1;"><div class="card-title" style="color:' + equipColor + ';">' + locName + ' ' + state + ' / ' + equipDisplay + ' / ' + assetNum + modelInfo + headsetInfo + '</div><div class="' + noteClass + '">' + (data.date || '최근') + ' ' + (person ? person + ' - ' : '') + issue + '</div></div></div>';
+  }).join('');
+  
+  document.getElementById('results').innerHTML = html;
+}
+
+function displayLocationResults() {
+  const loc = document.getElementById('locationSelect').value;
+  if (!loc) {
+    document.getElementById('results').innerHTML = '';
+    return;
+  }
+  let found = allData.filter(r => parseCurrentLocation(r).location === loc);
+  if (found.length === 0) {
+    document.getElementById('results').innerHTML = '<p style="padding:20px; text-align:center; color:#999;">해당 장소에 장비가 없습니다</p>';
+    return;
+  }
+  let html = '<div class="button-group"><div><button class="select-all-btn" onclick="selectAllEquipment(true)">✓ 전체선택</button><button class="select-all-btn" onclick="selectAllEquipment(false)">✗ 전체해제</button></div><button class="send-email-btn" onclick="showEmailModalWithSelection(\'' + loc + '\')">📧 선택항목 메일 전송</button></div>';
+  html += found.map(r => {
+    const data = parseCurrentLocation(r);
+    const locName = /^[1-6]$/.test(data.location) ? data.location + '팀' : data.location;
+    const assetNum = r['자산번호'] || r['자산 번호'] || '';
+    const equipNum = getEquipmentNumber(r);
+    const detail = data.date ? getDetailByDate(r, data.date) : null;
+    let state = "보유";
+    if (detail) {
+      const cleanDetail = detail.replace(/\s/g, '').toLowerCase();
+      if (cleanDetail.includes("반납예정")) state = "반납예정";
+      else if (cleanDetail.includes("수령예정")) state = "수령예정";
+      else if (cleanDetail.includes("반납")) state = "반납";
+      else if (cleanDetail.includes("수령")) state = "수령";
+    }
+    let person = "", issue = detail || "기록 없음";
+    if (detail) {
+      const match = detail.match(/\(([^-]+)-([^)]+)\)/) || detail.match(/([가-힣]+)\s*-\s*(.+)/);
+      if (match) {
+        person = match[1].trim();
+        issue = match[2].trim();
+      }
+    }
+    const equipDisplay = equipNum ? r._equip + '(' + equipNum + ')' : r._equip;
+    const hasIssue = detail && isRealIssue(detail);
+    const cardClass = hasIssue ? 'card issue' : 'card normal';
+    const noteClass = hasIssue ? 'card-note' : 'card-note normal';
+    const equipColor = EQUIPMENT_COLORS[r._equip] || '#2d3436';
+    
+    let modelName = r['모델'] || '';
+    let serialNum = r['제조번호'] || r['제조 번호'] || '';
+    
+    if (r._equip === '폐활량' && LUNG_ASSET_MAPPING[assetNum]) {
+      modelName = LUNG_ASSET_MAPPING[assetNum].model;
+      serialNum = LUNG_ASSET_MAPPING[assetNum].sn;
+    }
+    
+    const modelInfo = (modelName || serialNum) ? ' (모델명 - ' + modelName + ' , S/N - ' + serialNum + ')' : '';
+    
+    const headsetInfo = (r._equip === '청력기' && AUDIOMETER_HEADSET_MAPPING[assetNum]) 
+      ? ' (헤드셋 - ' + AUDIOMETER_HEADSET_MAPPING[assetNum] + ')' 
+      : '';
+    
+    const equipData = JSON.stringify({
+      '기기명': r['기기명'] || '',
+      '모델': modelName,
+      '제조번호': serialNum,
+      '자산번호': assetNum
+    }).replace(/'/g, '&apos;');
+    return '<div class="' + cardClass + '" style="display: flex; align-items: center;"><input type="checkbox" class="equipment-checkbox" data-equipment=\'' + equipData + '\' checked><div style="flex: 1;"><div class="card-title" style="color:' + equipColor + ';">' + locName + ' ' + state + ' / ' + equipDisplay + ' / ' + assetNum + modelInfo + headsetInfo + '</div><div class="' + noteClass + '">' + (data.date || '최근') + ' ' + (person ? person + ' - ' : '') + issue + '</div></div></div>';
+  }).join('');
+  document.getElementById('results').innerHTML = html;
+}
+
+function selectAllEquipment(checked) {
+  document.querySelectorAll('.equipment-checkbox').forEach(cb => cb.checked = checked);
+}
+
+function showEmailModalWithSelection(location) {
+  const selectedCheckboxes = document.querySelectorAll('.equipment-checkbox:checked');
+  if (selectedCheckboxes.length === 0) {
+    alert('⚠️ 전송할 장비를 선택해주세요!');
+    return;
+  }
+  selectedSender = null;
+  currentSenderPage = 1;
+  senderSearchQuery = '';
+  currentLocation = location;
+  const modal = document.getElementById('emailModal');
+  renderSenderList(selectedCheckboxes.length);
+  modal.style.display = 'block';
+}
+
+function renderSenderList(equipmentCount) {
+  const senders = Object.keys(EMAIL_SENDERS);
+  const filtered = senders.filter(name => name.toLowerCase().includes(senderSearchQuery.toLowerCase()) || EMAIL_SENDERS[name].toLowerCase().includes(senderSearchQuery.toLowerCase()));
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const startIdx = (currentSenderPage - 1) * ITEMS_PER_PAGE;
+  const endIdx = startIdx + ITEMS_PER_PAGE;
+  const currentItems = filtered.slice(startIdx, endIdx);
+  let html = '<div style="margin-bottom: 20px; font-size: 18px; font-weight: bold; color: #2d3436;">1️⃣ 보내는 사람 선택</div><div style="margin-bottom: 15px; padding: 10px; background: #f0f3ff; border-radius: 8px; color: #0984e3; font-weight: bold;">✓ ' + equipmentCount + '개 장비 선택됨</div><input type="text" class="search-box" placeholder="🔍 이름 또는 이메일 검색..." value="' + senderSearchQuery + '" oninput="senderSearchQuery = this.value; currentSenderPage = 1; renderSenderList(' + equipmentCount + ');">';
+  html += currentItems.map(name => '<button class="recipient-btn" onclick="selectSender(\'' + name + '\')">' + name + '<br><small style="color:#636e72;">' + EMAIL_SENDERS[name] + '</small></button>').join('');
+  if (totalPages > 1) {
+    html += '<div class="pagination">';
+    for (let i = 1; i <= totalPages; i++) {
+      html += '<button class="page-btn' + (i === currentSenderPage ? ' active' : '') + '" onclick="currentSenderPage = ' + i + '; renderSenderList(' + equipmentCount + ');">' + i + '</button>';
+    }
+    html += '</div>';
+  }
+  document.getElementById('recipientList').innerHTML = html;
+}
+
+function selectSender(senderName) {
+  selectedSender = senderName;
+  currentRecipientPage = 1;
+  recipientSearchQuery = '';
+  renderRecipientList();
+}
+
+function renderRecipientList() {
+  const recipients = Object.keys(EMAIL_RECIPIENTS);
+  const filtered = recipients.filter(name => name.toLowerCase().includes(recipientSearchQuery.toLowerCase()) || EMAIL_RECIPIENTS[name].toLowerCase().includes(recipientSearchQuery.toLowerCase()));
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const startIdx = (currentRecipientPage - 1) * ITEMS_PER_PAGE;
+  const endIdx = startIdx + ITEMS_PER_PAGE;
+  const currentItems = filtered.slice(startIdx, endIdx);
+  let html = '<div style="margin-bottom: 15px; padding: 10px; background: #e8f5e9; border-radius: 8px; color: #27ae60; font-weight: bold;">📤 보내는 사람: ' + selectedSender + '</div><div style="margin-bottom: 20px; font-size: 18px; font-weight: bold; color: #2d3436;">2️⃣ 받는 사람 선택</div><input type="text" class="search-box" placeholder="🔍 이름 또는 이메일 검색..." value="' + recipientSearchQuery + '" oninput="recipientSearchQuery = this.value; currentRecipientPage = 1; renderRecipientList();">';
+  html += currentItems.map(name => '<button class="recipient-btn" onclick="sendEmailWithSelection(\'' + name + '\')">' + name + '<br><small style="color:#636e72;">' + EMAIL_RECIPIENTS[name] + '</small></button>').join('');
+  if (totalPages > 1) {
+    html += '<div class="pagination">';
+    for (let i = 1; i <= totalPages; i++) {
+      html += '<button class="page-btn' + (i === currentRecipientPage ? ' active' : '') + '" onclick="currentRecipientPage = ' + i + '; renderRecipientList();">' + i + '</button>';
+    }
+    html += '</div>';
+  }
+  document.getElementById('recipientList').innerHTML = html;
+}
+
+function closeEmailModal() {
+  selectedSender = null;
+  currentSenderPage = 1;
+  currentRecipientPage = 1;
+  senderSearchQuery = '';
+  recipientSearchQuery = '';
+  document.getElementById('emailModal').style.display = 'none';
+}
+
+async function sendEmailWithSelection(recipientName) {
+  const recipient = EMAIL_RECIPIENTS[recipientName];
+  const sender = EMAIL_SENDERS[selectedSender];
+  const senderName = selectedSender;
+  const location = currentLocation;
+  const locName = /^[1-6]$/.test(location) ? location + '팀' : location;
+  
+  if (!selectedSender) {
+    alert('⚠️ 발신자를 선택해주세요!');
+    return;
+  }
+  
+  const selectedCheckboxes = document.querySelectorAll('.equipment-checkbox:checked');
+  const selectedEquipment = Array.from(selectedCheckboxes).map(cb => JSON.parse(cb.getAttribute('data-equipment').replace(/&apos;/g, "'")));
+  
+  if (selectedEquipment.length === 0) {
+    alert('⚠️ 전송할 장비를 선택해주세요!');
+    return;
+  }
+  
+  document.getElementById('recipientList').innerHTML = '<div style="text-align:center; padding:40px;"><div style="font-size:40px;">📧</div><div style="margin-top:20px; font-size:18px; font-weight:bold;">메일 전송 중...</div><div style="margin-top:10px; color:#636e72;">' + selectedEquipment.length + '개 장비</div></div>';
+  
+  try {
+    const numberedEquipment = selectedEquipment.map((item, index) => ({
+      '순번': index + 1,
+      '기기명': item['기기명'],
+      '모델': item['모델'],
+      'S/N': item['제조번호']
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(numberedEquipment);
+    ws['!cols'] = [{ wch: 8 }, { wch: 35 }, { wch: 18 }, { wch: 20 }];
+    
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cell_address = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!ws[cell_address]) continue;
+        if (!ws[cell_address].s) ws[cell_address].s = {};
+        ws[cell_address].s = {
+          alignment: { horizontal: 'center', vertical: 'center' },
+          border: {
+            top: { style: 'medium', color: { rgb: '000000' } },
+            bottom: { style: 'medium', color: { rgb: '000000' } },
+            left: { style: 'medium', color: { rgb: '000000' } },
+            right: { style: 'medium', color: { rgb: '000000' } }
+          },
+          fill: R === 0 ? { fgColor: { rgb: '4CAF50' } } : { fgColor: { rgb: 'FFFFFF' } },
+          font: R === 0 ? { bold: true, color: { rgb: 'FFFFFF' }, sz: 12 } : { sz: 11 }
+        };
+      }
+    }
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, locName);
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+    const fileName = locName + '_장비목록_' + selectedEquipment.length + '개_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+    
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recipient: recipient,
+        sender: sender,
+        senderName: senderName,
+        locationName: locName,
+        excelBase64: wbout,
+        fileName: fileName
+      })
+    });
+    
+    document.getElementById('recipientList').innerHTML = '<div style="text-align:center; padding:40px;"><div style="font-size:60px;">📨</div><div style="margin-top:20px; font-size:18px; font-weight:bold; color:#00b894;">메일 전송 요청 완료!</div><div style="margin-top:10px; color:#636e72;">' + senderName + ' → ' + recipientName + '<br>' + selectedEquipment.length + '개 장비</div><div style="margin-top:15px; font-size:14px; color:#636e72;">수신자 메일함을 확인해주세요.<br>(스팸함도 확인)</div><button class="download-btn" onclick="closeEmailModal();" style="margin-top:20px;">닫기</button></div>';
+    
+  } catch (error) {
+    document.getElementById('recipientList').innerHTML = '<div style="text-align:center; padding:40px;"><div style="font-size:60px;">❌</div><div style="margin-top:20px; font-size:18px; font-weight:bold; color:#d63031;">전송 실패</div><div style="margin-top:10px; color:#636e72;">' + error.message + '</div><button class="download-btn" onclick="closeEmailModal();" style="margin-top:20px;">닫기</button></div>';
+  }
+}
+
+function showCalendar() {
+  const b = document.getElementById('searchBox');
+  
+  const dateEquipments = {};
+  allData.forEach(r => {
+    const data = parseCurrentLocation(r);
+    if (data.date) {
+      const detail = getDetailByDate(r, data.date);
+      if (detail && isRealIssue(detail)) {
+        if (!dateEquipments[data.date]) {
+          dateEquipments[data.date] = new Set();
+        }
+        dateEquipments[data.date].add(r._equip);
+      }
+    }
+  });
+  
+  const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
+  const lastDate = new Date(currentYear, currentMonth, 0).getDate();
+  let html = '<div class="month-nav"><button onclick="moveMonth(-1)">◀</button><b>' + currentYear + '년 ' + currentMonth + '월</b><button onclick="moveMonth(1)">▶</button></div><div class="calendar">';
+  ['일', '월', '화', '수', '목', '금', '토'].forEach(d => { html += '<div class="cal-header">' + d + '</div>'; });
+  for (let i = 0; i < firstDay; i++) html += '<div></div>';
+  for (let d = 1; d <= lastDate; d++) {
+    const dateStr = String(currentMonth).padStart(2, '0') + '/' + String(d).padStart(2, '0');
+    const equipSet = dateEquipments[dateStr];
+    const equipList = equipSet ? Array.from(equipSet) : [];
+    const hasIssue = equipList.length > 0;
+    
+    let dayContent = d;
+    if (hasIssue) {
+      dayContent += '<div style="font-size:10px; margin-top:4px; line-height:1.3;">';
+      equipList.forEach(eq => {
+        const color = EQUIPMENT_COLORS[eq] || '#2d3436';
+        dayContent += '<div style="color:' + color + '; font-weight:bold;">' + eq + '</div>';
+      });
+      dayContent += '</div>';
+    }
+    
+    html += '<div class="cal-day' + (hasIssue ? ' issue' : '') + '" onclick="selectDate(\'' + dateStr + '\', this)">' + dayContent + '</div>';
+  }
+  html += '</div><div id="dateRes"></div>';
+  b.innerHTML = html;
+}
+
+function moveMonth(direction) {
+  currentMonth += direction;
+  if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+  else if (currentMonth < 1) { currentMonth = 12; currentYear--; }
+  showCalendar();
+}
+
+function selectDate(dateStr, element) {
+  document.querySelectorAll('.cal-day').forEach(x => x.classList.remove('selected'));
+  element.classList.add('selected');
+  const found = allData.filter(r => {
+    const data = parseCurrentLocation(r);
+    if (data.date !== dateStr) return false;
+    const detail = getDetailByDate(r, data.date);
+    return detail && isRealIssue(detail);
+  });
+  if (found.length === 0) {
+    document.getElementById('dateRes').innerHTML = '<p style="padding:20px; text-align:center;">특이사항 없음</p>';
+    return;
+  }
+  document.getElementById('dateRes').innerHTML = found.map(r => {
+    const data = parseCurrentLocation(r);
+    const locName = /^[1-6]$/.test(data.location) ? data.location + '팀' : data.location;
+    const assetNum = r['자산번호'] || r['자산 번호'] || '';
+    const equipNum = getEquipmentNumber(r);
+    const equipDisplay = equipNum ? r._equip + '(' + equipNum + ')' : r._equip;
+    const detail = getDetailByDate(r, data.date);
+    return '<div class="card issue"><div class="card-title">' + locName + ' / ' + equipDisplay + ' / ' + assetNum + '</div><div class="card-note">' + detail + '</div></div>';
+  }).join('');
+}
+
+window.onload = function() {
+  load();
+};
+</script>
+</body>
+</html>
