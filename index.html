@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>장비관리</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;background:#f5f5f5}.loading{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);display:none;justify-content:center;align-items:center;z-index:9999;color:#fff;font-size:18px}.loading.active{display:flex}.screen{display:none;min-height:100vh}.screen.active{display:block}.login-screen{display:flex!important;justify-content:center;align-items:center;background:linear-gradient(135deg,#667eea,#764ba2);padding:20px}.login-box{background:#fff;padding:30px;border-radius:15px;width:100%;max-width:400px}.login-box h1{text-align:center;margin-bottom:30px;color:#667eea}.login-box input,.login-box select{width:100%;padding:15px;margin-bottom:15px;border:2px solid #ddd;border-radius:10px;font-size:16px}.login-box button{width:100%;padding:15px;background:#667eea;color:#fff;border:none;border-radius:10px;font-size:16px;cursor:pointer;margin-bottom:10px}.login-box .link-btn{background:transparent;color:#667eea;text-decoration:underline}.hidden{display:none!important}.main-screen{padding-bottom:70px}.header{background:#667eea;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}.header h1{font-size:18px}.header-right{display:flex;gap:10px;font-size:14px;align-items:center}.header button{padding:8px 15px;border:none;border-radius:5px;cursor:pointer;color:#fff;font-size:14px}.btn-edit{background:#28a745}.btn-logout{background:#dc3545}.search-bar{padding:15px;background:#fff;display:flex;gap:10px}.search-bar input,.search-bar select{flex:1;padding:12px;border:2px solid #ddd;border-radius:10px;font-size:16px}.btn-email-all{padding:12px 20px;background:#28a745;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer;white-space:nowrap}.tabs{display:flex;background:#fff;border-bottom:2px solid #ddd}.tab{flex:1;padding:15px;text-align:center;border:none;background:transparent;font-size:16px;cursor:pointer}.tab.active{border-bottom:3px solid #667eea;font-weight:bold;color:#667eea}.category-tabs{display:flex;overflow-x:auto;background:#fff;padding:10px;gap:10px}.category-tab{padding:10px 20px;background:#f5f5f5;border:none;border-radius:20px;white-space:nowrap;font-size:14px;cursor:pointer}.category-tab.active{background:#667eea;color:#fff;font-weight:bold}.select-all-bar{padding:10px 15px;background:#fff;border-bottom:1px solid #ddd}.select-all-bar label{display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer}.select-all-bar input{width:20px;height:20px;cursor:pointer}.equipment-list{padding:15px}.equipment-item{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px;position:relative}.equipment-checkbox{position:absolute;top:15px;right:15px;width:24px;height:24px;cursor:pointer}.equipment-name{font-weight:bold;font-size:16px;margin-bottom:5px;padding-right:40px}.equipment-info{font-size:14px;color:#666;margin-bottom:3px}.equipment-location{display:inline-block;padding:4px 12px;background:#667eea;color:#fff;border-radius:12px;font-size:12px;margin-top:8px}.email-btn{margin-top:10px;padding:8px 16px;background:#28a745;color:#fff;border:none;border-radius:5px;font-size:14px;cursor:pointer}.bottom-nav{position:fixed;bottom:0;left:0;width:100%;background:#fff;display:flex;box-shadow:0 -2px 10px rgba(0,0,0,.1);z-index:100}.nav-item{flex:1;padding:12px;text-align:center;border:none;background:transparent;font-size:14px;cursor:pointer;color:#666}.nav-item.active{color:#667eea;font-weight:bold}.action-bar{position:fixed;bottom:60px;left:0;width:100%;background:#667eea;padding:15px;display:none;justify-content:space-between;align-items:center;z-index:99}.action-bar.active{display:flex}.action-bar span{color:#fff;font-weight:bold}.action-bar button{padding:10px 20px;background:#fff;color:#667eea;border:none;border-radius:5px;font-weight:bold;cursor:pointer;margin-left:10px}.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);display:none;justify-content:center;align-items:flex-end;z-index:1000}.modal.active{display:flex}.modal-content{background:#fff;width:100%;max-height:90vh;border-radius:20px 20px 0 0;padding:20px;overflow-y:auto}.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid #eee}.modal-close{font-size:28px;cursor:pointer}.form-group{margin-bottom:20px}.form-group label{display:block;margin-bottom:8px;font-weight:bold;font-size:14px}.form-group input,.form-group select,.form-group textarea{width:100%;padding:12px;border:2px solid #ddd;border-radius:10px;font-size:16px}.form-group textarea{min-height:80px}.modal-buttons{display:flex;gap:10px;margin-top:20px}.modal-buttons button{flex:1;padding:15px;border:none;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer}.btn-primary{background:#667eea;color:#fff}.btn-secondary{background:#6c757d;color:#fff}.selected-count{background:#28a745;color:#fff;padding:5px 10px;border-radius:15px}
+</style>
+</head>
+<body>
+<div class="loading" id="loading">처리중...</div>
+<div class="screen login-screen active" id="loginScreen"><div class="login-box"><h1>장비관리</h1><input type="text" id="loginId" placeholder="사번 아무거나"><input type="password" id="loginPw" placeholder="비밀번호 아무거나"><button id="loginBtn">로그인</button><button class="link-btn" id="registerBtn">회원가입</button></div></div>
+<div class="screen login-screen" id="registerScreen"><div class="login-box"><h1>회원가입</h1><input type="text" id="regId" placeholder="사번"><input type="text" id="regName" placeholder="이름"><input type="password" id="regPw" placeholder="비밀번호"><input type="password" id="regPwConf" placeholder="비밀번호 확인"><select id="regTeam"><option value="">팀 선택</option><option value="1팀">1팀</option><option value="2팀">2팀</option><option value="3팀">3팀</option><option value="4팀">4팀</option><option value="5팀">5팀</option><option value="6팀">6팀</option><option value="평택">평택</option><option value="수원">수원</option><option value="아산1">아산1</option><option value="사무실">사무실</option><option value="센터">센터</option><option value="의공실">의공실</option></select><button id="regSubmitBtn">가입신청</button><button class="link-btn" id="regBackBtn">로그인으로</button></div></div>
+<div class="screen main-screen" id="mainScreen"><div class="header"><h1>장비관리</h1><div class="header-right"><span id="userInfo"></span><button class="btn-edit" id="editBtn">정보수정</button><button class="btn-logout" id="logoutBtn">로그아웃</button></div></div><div class="tabs"><button class="tab active" id="equipTab">장비별</button><button class="tab" id="teamTab">팀별</button></div><div id="equipmentView"><div class="search-bar"><input type="text" id="searchInput" placeholder="검색"><button class="btn-email-all" id="emailSelectedBtn">선택 메일</button></div><div class="category-tabs" id="categoryTabs"></div><div class="select-all-bar"><label><input type="checkbox" id="selectAllCheckbox"> 전체 선택</label></div><div class="equipment-list" id="equipmentList"></div></div><div id="teamView" class="hidden"><div class="search-bar"><select id="teamFilter"><option value="">팀 선택</option><option value="1팀">1팀</option><option value="2팀">2팀</option><option value="3팀">3팀</option><option value="4팀">4팀</option><option value="5팀">5팀</option><option value="6팀">6팀</option><option value="평택">평택</option><option value="수원">수원</option><option value="아산1">아산1</option><option value="사무실">사무실</option><option value="센터">센터</option><option value="의공실">의공실</option></select><button class="btn-email-all" id="emailTeamBtn">팀 메일</button></div><div class="equipment-list" id="teamList"></div></div><div class="action-bar" id="actionBar"><span><span class="selected-count" id="selectedCount">0</span> 선택</span><button id="bulkBtn">수령/반납</button><button id="emailBulkBtn">메일</button></div><div class="bottom-nav"><button class="nav-item active" id="navEquip">장비별</button><button class="nav-item" id="navTeam">팀별</button></div></div>
+<div class="modal" id="bulkModal"><div class="modal-content"><div class="modal-header"><h2>일괄처리</h2><span class="modal-close" id="bulkClose">×</span></div><div class="form-group"><label>상태</label><select id="bulkType"><option value="수령">수령</option><option value="반납">반납</option><option value="보유">보유</option><option value="수령예정">수령예정</option></select></div><div class="form-group"><label>팀/위치</label><select id="bulkTeam"><option value="1팀">1팀</option><option value="2팀">2팀</option><option value="3팀">3팀</option><option value="4팀">4팀</option><option value="5팀">5팀</option><option value="6팀">6팀</option><option value="평택">평택</option><option value="수원">수원</option><option value="아산1">아산1</option><option value="사무실">사무실</option><option value="센터">센터</option><option value="의공실">의공실</option></select></div><div class="form-group hidden" id="returnGroup"><label>반납사유</label><select id="returnReason"><option value="팀해체">팀해체</option><option value="의공실">의공실</option><option value="장비점검">장비점검</option><option value="기타">기타</option></select></div><div class="form-group hidden" id="customGroup"><label>사유입력</label><input type="text" id="customReason"></div><div class="form-group"><label>관리자</label><input type="text" id="bulkManager"></div><div class="form-group"><label>특이사항</label><textarea id="bulkMemo">특이사항 없음</textarea></div><div class="form-group"><label>날짜</label><input type="date" id="bulkDate"></div><div class="modal-buttons"><button class="btn-primary" id="bulkSubmit">등록</button><button class="btn-secondary" id="bulkCancel">취소</button></div></div></div>
+<div class="modal" id="emailModal"><div class="modal-content"><div class="modal-header"><h2>이메일</h2><span class="modal-close" id="emailClose">×</span></div><div class="form-group"><label>보낸사람</label><select id="emailFrom"><option value="">선택</option></select></div><div class="form-group"><label>받는사람</label><select id="emailTo"><option value="">선택</option></select></div><div class="form-group"><label>제목</label><input type="text" id="emailSubject" value="장비 정보"></div><div class="form-group"><label>내용</label><textarea id="emailBody" rows="10"></textarea></div><div class="modal-buttons"><button class="btn-primary" id="emailSend">전송</button><button class="btn-secondary" id="emailCancel">취소</button></div></div></div>
+<div class="modal" id="editModal"><div class="modal-content"><div class="modal-header"><h2>정보수정</h2><span class="modal-close" id="editClose">×</span></div><div class="form-group"><label>사번</label><input type="text" id="editId" disabled></div><div class="form-group"><label>이름</label><input type="text" id="editName" disabled></div><div class="form-group"><label>팀</label><select id="editTeam"><option value="1팀">1팀</option><option value="2팀">2팀</option><option value="3팀">3팀</option><option value="4팀">4팀</option><option value="5팀">5팀</option><option value="6팀">6팀</option><option value="평택">평택</option><option value="수원">수원</option><option value="아산1">아산1</option><option value="사무실">사무실</option><option value="센터">센터</option><option value="의공실">의공실</option></select></div><div class="form-group"><label>새 비밀번호</label><input type="password" id="editPw" placeholder="변경시만"></div><div class="modal-buttons"><button class="btn-primary" id="editSave">저장</button><button class="btn-secondary" id="editCancel">취소</button></div></div></div>
+<script>
+const API='https://script.google.com/macros/s/AKfycbyoQyPWpEhoVnizoYEXIaDIFWbUvVD2ftkA6xHi8H8VqN_SnEYOpVYjBqsjpDmtgT5B/exec';
+const CAT=['청력기','청력부스','중이기기','소음계','원심분리기','HRV','EKG','폐활량','실린지','프린터기','업무용노트북','와이브로','포터블모니터'];
+const EMAILS={
+'조해영':'hy0617.jo@samsung.com',
+'백수빈':'subeen2319.baek@samsung.com',
+'문선미':'sm0316.moon@samsung.com',
+'김보현':'bohyeon6601.kim@samsung.com',
+'김정민':'jm0605.kim@samsung.com',
+'고희진':'heejin3579.ko@samsung.com',
+'이지연':'joanna0812.lee@samsung.com',
+'신수인':'suingss0120.shin@samsung.com',
+'김성현':'seonghyeon402.kim@samsung.com',
+'안황코':'sj0206.ahn@samsung.com'
+};
+let G={user:null,all:[],filt:[],sel:[],cat:''};
+const EQ=[
+{id:1,name:"AUDIOMETER",assetNo:"50604-00152",serial:"EF162183",category:"청력기",location:"1팀",headsetModel:"SA-203",headsetSerial:"WT109429/WT109430"},
+{id:2,name:"AUDIOMETER",assetNo:"50604-00153",serial:"EF162190",category:"청력기",location:"미지정",headsetModel:"SA-203",headsetSerial:"WT109528/WT109538"},
+{id:3,name:"AUDIOMETER",assetNo:"50604-00181",serial:"EF162459",category:"청력기",location:"미지정",headsetModel:"SA-203",headsetSerial:"WT305448/WT305441"},
+{id:4,name:"AUDIOMETER",assetNo:"50604-00194",serial:"EF162698",category:"청력기",location:"미지정",headsetModel:"SA-203",headsetSerial:"WT402572/WT402584"},
+{id:5,name:"AUDIOMETER",assetNo:"50604-00195",serial:"EF162699",category:"청력기",location:"미지정",headsetModel:"SA-203",headsetSerial:"WT402783/WT402588"},
+{id:6,name:"AUDIOMETER",assetNo:"50604-00196",serial:"EF162700",category:"청력기",location:"미지정",headsetModel:"SA-203",headsetSerial:"WT402782/WT402781"},
+{id:7,name:"AUDIOMETER",assetNo:"50604-00211",serial:"EF162859",category:"청력기",location:"미지정",headsetModel:"SA-203",headsetSerial:"WT482942/WT482968"},
+{id:8,name:"AUDIOMETER",assetNo:"50604-00212",serial:"EF162861",category:"청력기",location:"미지정",headsetModel:"SA-203",headsetSerial:"WT476063/WT498521"},
+{id:9,name:"AUDIOMETER",assetNo:"50604-00221",serial:"EF162894",category:"청력기",location:"미지정",headsetModel:"SA-203",headsetSerial:"WT565598/WT558124"},
+{id:10,name:"AUDIOMETER",assetNo:"50604-00222",serial:"EF162895",category:"청력기",location:"미지정",headsetModel:"SA-203",headsetSerial:"WT550841/WT567270"},
+{id:11,name:"AUDIOMETER",assetNo:"50604-00233",serial:"EF163055",category:"청력기",location:"1팀",headsetModel:"SA-203",headsetSerial:"WT662399/WT638008"},
+{id:12,name:"AUDIOMETER",assetNo:"50604-00234",serial:"EF163056",category:"청력기",location:"1팀",headsetModel:"SA-203",headsetSerial:"WT694207/WT699298"},
+{id:13,name:"SPIROMETRY",assetNo:"50601-00770",serial:"PN21206",category:"폐활량",location:"4팀",notebookModel:"NT300E5K-K34S",notebookSerial:"0N8V91IHB00202E"},
+{id:14,name:"SPIROMETRY",assetNo:"50601-00771",serial:"PN21214",category:"폐활량",location:"3팀",notebookModel:"NT270E5R-KD1S",notebookSerial:"JKGK91KFC00009R"},
+{id:15,name:"SPIROMETRY",assetNo:"50601-00772",serial:"PN21215",category:"폐활량",location:"사무실",notebookModel:"NT270E5R-KD1S",notebookSerial:"JKGK91KFC00410Y"},
+{id:16,name:"SPIROMETRY",assetNo:"50601-00773",serial:"PN21216",category:"폐활량",location:"사무실",notebookModel:"NT270E5R-KD1S",notebookSerial:"JKGK91KFC00281R"},
+{id:17,name:"SPIROMETRY",assetNo:"50601-00774",serial:"PN21217",category:"폐활량",location:"4팀",notebookModel:"NT300E5K-L26W",notebookSerial:"0QP191IU100958E"},
+{id:18,name:"SPIROMETRY",assetNo:"50601-00775",serial:"PN21373",category:"폐활량",location:"사무실",notebookModel:"NT300E5X-AD2S",notebookSerial:"HxX391RD100005B"},
+{id:19,name:"SPIROMETRY",assetNo:"50601-00776",serial:"PN10001",category:"폐활량",location:"미지정",notebookModel:"NT300E5C-A39S",notebookSerial:"JKMl91DF300107K"},
+{id:20,name:"SPIROMETRY",assetNo:"50601-00822",serial:"PN23174",category:"폐활량",location:"미지정",notebookModel:"NT300E5K-K34S",notebookSerial:"0N8V91IHB00226K"},
+{id:21,name:"SPIROMETRY",assetNo:"50601-00823",serial:"PN23175",category:"폐활량",location:"미지정",notebookModel:"NT300E5R-KD3A",notebookSerial:"OUMN91JC00115M"},
+{id:22,name:"SPIROMETRY",assetNo:"50601-00863",serial:"PN23462",category:"폐활량",location:"미지정",notebookModel:"NT300E5K-L26W",notebookSerial:"0QP191IJ201075D"},
+{id:23,name:"SPIROMETRY",assetNo:"50601-00864",serial:"PN23463",category:"폐활량",location:"미지정",notebookModel:"NT300E5K-L26W",notebookSerial:"0QP191IJ200766K"},
+{id:24,name:"SPIROMETRY",assetNo:"50601-00871",serial:"PN23467",category:"폐활량",location:"미지정",notebookModel:"NT550EAZ-AD2A",notebookSerial:"0WGE91AKC00159Y"},
+{id:25,name:"SPIROMETRY",assetNo:"50601-00872",serial:"PN23468",category:"폐활량",location:"미지정",notebookModel:"NT300E5R-KD3A",notebookSerial:"0UMN1CJC00017V"},
+{id:26,name:"SPIROMETRY",assetNo:"50601-00873",serial:"PN23469",category:"폐활량",location:"미지정",notebookModel:"NT300E5X-AD2S",notebookSerial:"HxX391PD100015E"},
+{id:27,name:"SPIROMETRY",assetNo:"50601-00949",serial:"PN24229",category:"폐활량",location:"미지정",notebookModel:"NT550EAZ-AD2A",notebookSerial:"0WGE91AKC00012H"},
+{id:28,name:"SPIROMETRY",assetNo:"50601-00950",serial:"PN24230",category:"폐활량",location:"미지정",notebookModel:"NT270E5R-KD1S",notebookSerial:"JKGK91KFC00319X"},
+{id:29,name:"SPIROMETRY",assetNo:"50601-00951",serial:"PN24231",category:"폐활량",location:"미지정",notebookModel:"NT270E5R-KD1S",notebookSerial:"JKGK91KFC00086Z"},
+{id:30,name:"SPIROMETRY",assetNo:"50601-00964",serial:"PN24233",category:"폐활량",location:"미지정",notebookModel:"NT300E5K-L26W",notebookSerial:"0QP191GJ100332Z"},
+{id:31,name:"SPIROMETRY",assetNo:"50601-00965",serial:"PN24906",category:"폐활량",location:"미지정",notebookModel:"NT300E5K-L26W",notebookSerial:"0QP191AJ101068A"},
+{id:32,name:"SPIROMETRY",assetNo:"50601-00966",serial:"PN24907",category:"폐활량",location:"미지정",notebookModel:"NT550EAZ-AD2A",notebookSerial:"0WGE91AK300199N"},
+{id:33,name:"SPIROMETRY",assetNo:"50601-00967",serial:"PN24908",category:"폐활량",location:"미지정",notebookModel:"NT550EAZ-AD2A",notebookSerial:"0WGE91AKC00042E"},
+{id:34,name:"SPIROMETRY",assetNo:"50601-00968",serial:"PN24909",category:"폐활량",location:"미지정",notebookModel:"NT550EAZ-AD2A",notebookSerial:"0WGE91AK90074X"},
+{id:35,name:"SPIROMETRY",assetNo:"50601-00969",serial:"PN24910",category:"폐활량",location:"미지정",notebookModel:"NT550EAZ-AD2A",notebookSerial:"0WGE91AKC00039D"},
+{id:36,name:"SPIROMETRY",assetNo:"50601-01533",serial:"569111",category:"폐활량",location:"미지정",notebookModel:"NT551XED",notebookSerial:"67A29FCX100010E"},
+{id:37,name:"SPIROMETRY",assetNo:"50601-01534",serial:"569124",category:"폐활량",location:"미지정",notebookModel:"NT551XED",notebookSerial:"67A29FCX100020K"},
+{id:38,name:"SPIROMETRY",assetNo:"50601-01535",serial:"569130",category:"폐활량",location:"미지정",notebookModel:"NT551XED",notebookSerial:"67A29FCX100006M"},
+{id:39,name:"SPIROMETRY",assetNo:"50601-01536",serial:"569133",category:"폐활량",location:"미지정",notebookModel:"NT551XED-K0U/C",notebookSerial:"67A29FCX100011T"},
+{id:40,name:"SPIROMETRY",assetNo:"50601-01537",serial:"569134",category:"폐활량",location:"미지정",notebookModel:"NT551XED",notebookSerial:"67A29FCX100009Y"},
+{id:41,name:"SPIROMETRY",assetNo:"50601-01538",serial:"569135",category:"폐활량",location:"미지정",notebookModel:"NT551XED",notebookSerial:"67A29FCX100008J"},
+{id:42,name:"SPIROMETRY",assetNo:"50601-01539",serial:"569139",category:"폐활량",location:"미지정",notebookModel:"NT551XED",notebookSerial:"67A29FCX100025N"},
+{id:43,name:"SPIROMETRY",assetNo:"50601-01632",serial:"570027",category:"폐활량",location:"미지정",notebookModel:"NT751XGK-K03/C",notebookSerial:"KYFPD99YY90000BH"},
+{id:44,name:"SPIROMETRY",assetNo:"50601-01633",serial:"570058",category:"폐활량",location:"미지정",notebookModel:"NT751XGK-K03/C",notebookSerial:"KYFPD99YY90003KX"},
+{id:45,name:"SPIROMETRY",assetNo:"50601-01634",serial:"570094",category:"폐활량",location:"미지정",notebookModel:"NT751XGK-K03/C",notebookSerial:"KYFPD99YY90003KX"},
+{id:46,name:"SPIROMETRY",assetNo:"50601-01635",serial:"570095",category:"폐활량",location:"미지정",notebookModel:"NT751XGK-K03/C",notebookSerial:"KYFPD99YY90003WB"},
+{id:47,name:"SPIROMETRY",assetNo:"50601-01636",serial:"570096",category:"폐활량",location:"미지정",notebookModel:"NT751XGK-K03/C",notebookSerial:"KYFPD99YY90003P"},
+{id:48,name:"SPIROMETRY",assetNo:"50601-01637",serial:"570097",category:"폐활량",location:"미지정",notebookModel:"NT751XGK-K03/C",notebookSerial:"KYFPD99YY90005F"},
+{id:49,name:"SPIROMETRY",assetNo:"50601-01638",serial:"570098",category:"폐활량",location:"미지정",notebookModel:"NT751XGK-K03/C",notebookSerial:"KYFPD99YY900006"},
+{id:50,name:"SPIROMETRY",assetNo:"50601-01639",serial:"570099",category:"폐활량",location:"미지정",notebookModel:"NT751XGK-K03/C",notebookSerial:"KYFPD99YY90003S"}
+];
+function $(id){return document.getElementById(id)}
+function login(){
+const id=$('loginId').value.trim();
+const pw=$('loginPw').value.trim();
+if(!id||!pw){alert('입력하세요');return}
+G.user={id:id,name:id,team:'1팀'};
+localStorage.setItem('equipUser',JSON.stringify(G.user));
+$('loginScreen').classList.remove('active');
+$('mainScreen').classList.add('active');
+$('userInfo').textContent=G.user.name;
+load()
+}
+function register(){
+const id=$('regId').value.trim();
+const name=$('regName').value.trim();
+const pw=$('regPw').value.trim();
+const conf=$('regPwConf').value.trim();
+const team=$('regTeam').value;
+if(!id||!name||!pw||!conf||!team){alert('모두 입력');return}
+if(pw!==conf){alert('비번 불일치');return}
+alert('가입신청 완료');
+$('registerScreen').classList.remove('active');
+$('loginScreen').classList.add('active')
+}
+function load(){G.all=[...EQ];G.filt=[...G.all];renderCat();renderList()}
+function renderCat(){const c=$('categoryTabs');c.innerHTML='';const all=document.createElement('button');all.className='category-tab active';all.textContent='전체';all.onclick=()=>selectCat('');c.appendChild(all);CAT.forEach(ca=>{const cnt=G.all.filter(e=>e.category===ca).length;if(cnt>0){const btn=document.createElement('button');btn.className='category-tab';btn.textContent=ca+'('+cnt+')';btn.onclick=()=>selectCat(ca);c.appendChild(btn)}})}
+function selectCat(c){G.cat=c;document.querySelectorAll('.category-tab').forEach(t=>t.classList.remove('active'));event.target.classList.add('active');filter()}
+function filter(){const s=$('searchInput').value.toLowerCase();G.filt=G.all.filter(i=>{const mc=!G.cat||i.category===G.cat;const ms=!s||i.name.toLowerCase().includes(s)||i.assetNo.toLowerCase().includes(s);return mc&&ms});renderList()}
+function renderList(){const l=$('equipmentList');if(G.filt.length===0){l.innerHTML='<div style="text-align:center;padding:40px;color:#999">없음</div>';return}l.innerHTML=G.filt.map(i=>{let h='<div class="equipment-item">';h+='<input type="checkbox" class="equipment-checkbox" data-id="'+i.id+'" '+(G.sel.includes(i.id)?'checked':'')+' >';h+='<div class="equipment-name">'+i.name+'</div>';h+='<div class="equipment-info">자산: '+i.assetNo+'</div>';if(i.serial)h+='<div class="equipment-info">시리얼: '+i.serial+'</div>';if(i.notebookModel)h+='<div class="equipment-info">노트북: '+i.notebookModel+' ('+i.notebookSerial+')</div>';if(i.headsetModel)h+='<div class="equipment-info">헤드셋: '+i.headsetModel+' ('+i.headsetSerial+')</div>';h+='<span class="equipment-location">'+i.location+'</span>';h+='<button class="email-btn" data-id="'+i.id+'">이메일</button>';h+='</div>';return h}).join('');document.querySelectorAll('.equipment-checkbox').forEach(cb=>cb.onchange=function(){toggleSel(parseInt(this.dataset.id))});document.querySelectorAll('.email-btn').forEach(btn=>btn.onclick=function(){emailSelected([parseInt(this.dataset.id)])})}
+function toggleSelectAll(){const checked=$('selectAllCheckbox').checked;if(checked){G.sel=G.filt.map(i=>i.id)}else{G.sel=[]}$('selectedCount').textContent=G.sel.length;$('actionBar').classList.toggle('active',G.sel.length>0);renderList()}
+function toggleSel(id){const idx=G.sel.indexOf(id);if(idx>-1)G.sel.splice(idx,1);else G.sel.push(id);$('selectedCount').textContent=G.sel.length;$('actionBar').classList.toggle('active',G.sel.length>0);$('selectAllCheckbox').checked=G.sel.length===G.filt.length}
+function switchView(v){if(v==='equipment'){$('equipmentView').classList.remove('hidden');$('teamView').classList.add('hidden');$('equipTab').classList.add('active');$('teamTab').classList.remove('active');$('navEquip').classList.add('active');$('navTeam').classList.remove('active')}else{$('equipmentView').classList.add('hidden');$('teamView').classList.remove('hidden');$('equipTab').classList.remove('active');$('teamTab').classList.add('active');$('navEquip').classList.remove('active');$('navTeam').classList.add('active');filterTeam()}}
+function filterTeam(){const t=$('teamFilter').value;const tl=$('teamList');const data=t?G.all.filter(e=>e.location===t):G.all;if(data.length===0){tl.innerHTML='<div style="text-align:center;padding:40px;color:#999">없음</div>';return}tl.innerHTML=data.map(i=>'<div class="equipment-item"><div class="equipment-name">'+i.name+'</div><div class="equipment-info">자산: '+i.assetNo+'</div><span class="equipment-location">'+i.location+'</span></div>').join('')}
+function showBulk(){if(G.sel.length===0){alert('선택없음');return}$('bulkTeam').value=G.user.team;$('bulkManager').value=G.user.name;$('bulkModal').classList.add('active')}
+async function submitBulk(){if(G.sel.length===0){alert('선택없음');return}const type=$('bulkType').value;const team=$('bulkTeam').value;const mgr=$('bulkManager').value.trim();const memo=$('bulkMemo').value.trim();const date=$('bulkDate').value;let reason='';if(type==='반납'){reason=$('returnReason').value;if(reason==='기타')reason=$('customReason').value.trim();if(!reason){alert('반납사유 입력');return}}if(!team||!mgr||!memo||!date){alert('모두 입력');return}$('loading').classList.add('active');try{for(const id of G.sel){const eq=G.all.find(e=>e.id===id);if(!eq)continue;const url=API+'?equipment='+encodeURIComponent(eq.category)+'&assetNo='+encodeURIComponent(eq.assetNo)+'&team='+encodeURIComponent(team)+'&status='+encodeURIComponent(type)+'&manager='+encodeURIComponent(mgr)+'&memo='+encodeURIComponent(memo)+'&returnReason='+encodeURIComponent(reason)+'&date='+date;await fetch(url);const idx=G.all.findIndex(e=>e.id===id);if(idx>-1){if(type==='수령'||type==='보유'||type==='수령예정')G.all[idx].location=team;else if(type==='반납')G.all[idx].location='사무실'}}alert('등록완료');G.sel=[];$('selectedCount').textContent='0';$('selectAllCheckbox').checked=false;$('actionBar').classList.remove('active');$('bulkModal').classList.remove('active');filter()}catch(e){alert('실패:'+e.message)}finally{$('loading').classList.remove('active')}}
+function emailSelected(ids){if(!ids||ids.length===0){alert('선택없음');return}const items=ids.map(id=>G.all.find(e=>e.id===id)).filter(e=>e);let body='선택 장비 목록:\n\n';items.forEach(eq=>{body+='---\n';body+='장비명: '+eq.name+'\n';body+='자산번호: '+eq.assetNo+'\n';body+='시리얼: '+eq.serial+'\n';body+='카테고리: '+eq.category+'\n';body+='위치: '+eq.location+'\n';if(eq.notebookModel)body+='노트북: '+eq.notebookModel+' ('+eq.notebookSerial+')\n';if(eq.headsetModel)body+='헤드셋: '+eq.headsetModel+' ('+eq.headsetSerial+')\n';body+='\n'});$('emailBody').value=body;$('emailSubject').value='장비 정보 ('+items.length+'개)';$('emailModal').classList.add('active')}
+function emailTeam(){const t=$('teamFilter').value;if(!t){alert('팀 선택');return}const items=G.all.filter(e=>e.location===t);if(items.length===0){alert('장비없음');return}let body=t+' 장비 목록:\n\n';items.forEach(eq=>{body+='---\n';body+='장비명: '+eq.name+'\n';body+='자산번호: '+eq.assetNo+'\n';body+='위치: '+eq.location+'\n';body+='\n'});$('emailBody').value=body;$('emailSubject').value=t+' 장비 목록';$('emailModal').classList.add('active')}
+function sendEmail(){const from=$('emailFrom').value.trim();const to=$('emailTo').value.trim();const subj=$('emailSubject').value.trim();const body=$('emailBody').value.trim();if(!to||!subj||!body){alert('모두 입력');return}const mailto='mailto:'+to+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);window.location.href=mailto;$('emailModal').classList.remove('active')}
+function showEdit(){$('editId').value=G.user.id;$('editName').value=G.user.name;$('editTeam').value=G.user.team;$('editPw').value='';$('editModal').classList.add('active')}
+function saveEdit(){G.user.team=$('editTeam').value;localStorage.setItem('equipUser',JSON.stringify(G.user));$('userInfo').textContent=G.user.name;alert('수정완료');$('editModal').classList.remove('active')}
+function init(){
+document.getElementById('bulkDate').valueAsDate=new Date();
+$('loginBtn').onclick=login;
+$('registerBtn').onclick=function(){$('loginScreen').classList.remove('active');$('registerScreen').classList.add('active')};
+$('regBackBtn').onclick=function(){$('registerScreen').classList.remove('active');$('loginScreen').classList.add('active')};
+$('regSubmitBtn').onclick=register;
+$('logoutBtn').onclick=function(){G.user=null;localStorage.removeItem('equipUser');$('mainScreen').classList.remove('active');$('loginScreen').classList.add('active')};
+$('editBtn').onclick=showEdit;
+$('equipTab').onclick=function(){switchView('equipment')};
+$('teamTab').onclick=function(){switchView('team')};
+$('navEquip').onclick=function(){switchView('equipment')};
+$('navTeam').onclick=function(){switchView('team')};
+$('searchInput').oninput=filter;
+$('teamFilter').onchange=filterTeam;
+$('selectAllCheckbox').onchange=toggleSelectAll;
+$('bulkBtn').onclick=showBulk;
+$('emailBulkBtn').onclick=function(){emailSelected(G.sel)};
+$('emailSelectedBtn').onclick=function(){emailSelected(G.sel)};
+$('emailTeamBtn').onclick=emailTeam;
+$('bulkClose').onclick=function(){$('bulkModal').classList.remove('active')};
+$('bulkCancel').onclick=function(){$('bulkModal').classList.remove('active')};
+$('bulkType').onchange=function(){const r=$('bulkType').value==='반납';$('returnGroup').classList.toggle('hidden',!r);if(!r)$('customGroup').classList.add('hidden')};
+$('returnReason').onchange=function(){const c=$('returnReason').value==='기타';$('customGroup').classList.toggle('hidden',!c)};
+$('bulkSubmit').onclick=submitBulk;
+$('emailClose').onclick=function(){$('emailModal').classList.remove('active')};
+$('emailCancel').onclick=function(){$('emailModal').classList.remove('active')};
+$('emailSend').onclick=sendEmail;
+$('editClose').onclick=function(){$('editModal').classList.remove('active')};
+$('editCancel').onclick=function(){$('editModal').classList.remove('active')};
+$('editSave').onclick=saveEdit;
+const fromSel=$('emailFrom');const toSel=$('emailTo');Object.keys(EMAILS).forEach(name=>{const o1=document.createElement('option');o1.value=EMAILS[name];o1.textContent=name+' ('+EMAILS[name]+')';fromSel.appendChild(o1);const o2=document.createElement('option');o2.value=EMAILS[name];o2.textContent=name+' ('+EMAILS[name]+')';toSel.appendChild(o2)});
+const saved=localStorage.getItem('equipUser');
+if(saved){G.user=JSON.parse(saved);$('loginScreen').classList.remove('active');$('mainScreen').classList.add('active');$('userInfo').textContent=G.user.name;load()}
+}
+window.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
