@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>장비관리</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;background:#f5f5f5}.loading{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);display:none;justify-content:center;align-items:center;z-index:9999;color:#fff;font-size:18px}.loading.active{display:flex}.screen{display:none;min-height:100vh}.login-screen{display:flex;justify-content:center;align-items:center;background:linear-gradient(135deg,#667eea,#764ba2);padding:20px}.login-box{background:#fff;padding:30px;border-radius:15px;width:100%;max-width:400px}.login-box h1{text-align:center;margin-bottom:30px;color:#667eea}.login-box input{width:100%;padding:15px;margin-bottom:15px;border:2px solid #ddd;border-radius:10px;font-size:16px}.login-box button{width:100%;padding:15px;background:#667eea;color:#fff;border:none;border-radius:10px;font-size:16px;cursor:pointer}.hidden{display:none!important}.main-screen{padding-bottom:70px}.header{background:#667eea;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}.header h1{font-size:18px}.header-right{display:flex;gap:10px;font-size:14px;align-items:center}.header button{padding:8px 15px;border:none;border-radius:5px;cursor:pointer;color:#fff;font-size:14px}.btn-edit{background:#28a745}.btn-logout{background:#dc3545}.tabs{display:flex;gap:5px;margin-bottom:15px;background:#fff;padding:10px}.tab{flex:1;padding:12px;background:#f5f5f5;border:2px solid #ddd;border-radius:8px;text-align:center;font-weight:bold;cursor:pointer;font-size:13px}.tab.active{background:#667eea;color:#fff;border-color:#667eea}.box{background:#fff;padding:15px;border-radius:12px;margin-bottom:10px;box-shadow:0 2px 5px rgba(0,0,0,.1)}label{display:block;font-weight:bold;margin-bottom:5px;font-size:14px}select{width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;font-size:16px;margin-bottom:10px}.card{background:#fff;padding:15px;margin-bottom:10px;border-radius:8px;border-left:8px solid #667eea;box-shadow:0 2px 4px rgba(0,0,0,.1);display:flex;align-items:center}.card.issue{border-left-color:#d63031;background:#fff5f5}.card-title{font-weight:bold;font-size:15px;color:#333;margin-bottom:5px;flex:1}.card-note{background:#fdf2f2;padding:10px;border-radius:5px;color:#d63031;font-weight:bold;font-size:14px;border:1px solid #ff7675;margin-top:5px}.card-note.normal{background:#f8f9fa;color:#2d3436;border-color:#dfe6e9}.equipment-checkbox{width:24px;height:24px;margin-right:15px;cursor:pointer}.button-group{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;padding:10px;background:#f8f9fa;border-radius:8px}.select-all-btn{padding:10px 20px;background:#0984e3;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;margin-right:10px}.send-email-btn{padding:12px 30px;background:#00b894;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;font-size:16px}.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);display:none;justify-content:center;align-items:flex-end;z-index:1000}.modal.active{display:flex}.modal-content{background:#fff;width:100%;max-height:90vh;border-radius:20px 20px 0 0;padding:20px;overflow-y:auto}.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid #eee}.modal-close{font-size:28px;cursor:pointer}.form-group{margin-bottom:20px}.form-group label{display:block;margin-bottom:8px;font-weight:bold;font-size:14px}.form-group input,.form-group select,.form-group textarea{width:100%;padding:12px;border:2px solid #ddd;border-radius:10px;font-size:16px}.form-group textarea{min-height:80px}.modal-buttons{display:flex;gap:10px;margin-top:20px}.modal-buttons button{flex:1;padding:15px;border:none;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer}.btn-primary{background:#667eea;color:#fff}.btn-secondary{background:#6c757d;color:#fff}.calendar{display:grid;grid-template-columns:repeat(7,1fr);background:#eee;gap:1px;border:1px solid #ddd;border-radius:8px;overflow:hidden}.cal-header{padding:10px;text-align:center;font-weight:bold;background:#f8f9fa;font-size:12px}.cal-day{height:80px;background:#fff;padding:5px;text-align:left;font-size:14px;cursor:pointer;position:relative}.cal-day.issue{background:#fff0f0}.cal-day.issue::after{content:'⚠️';position:absolute;bottom:5px;right:5px;font-size:12px;color:#d63031}.cal-day.selected{background:#667eea!important;color:#fff!important}.month-nav{display:flex;justify-content:space-between;align-items:center;margin:10px 0}.month-nav button{padding:10px 20px;background:#667eea;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold}
+</style>
+</head>
+<body>
+<div class="loading" id="loading">처리중...</div>
+
+<div class="screen login-screen" id="loginScreen" style="display:flex">
+<div class="login-box">
+<h1>장비관리</h1>
+<input type="text" id="loginId" placeholder="사번">
+<input type="text" id="loginName" placeholder="이름">
+<input type="password" id="loginPw" placeholder="비밀번호">
+<button type="button" onclick="window.doLogin()">로그인</button>
+</div>
+</div>
+
+<div class="screen main-screen" id="mainScreen" style="display:none">
+<div class="header">
+<h1 id="status">로딩중...</h1>
+<div class="header-right">
+<span id="userInfo"></span>
+<button class="btn-edit" onclick="window.showEdit()">정보수정</button>
+<button class="btn-logout" onclick="window.doLogout()">로그아웃</button>
+</div>
+</div>
+
+<div class="tabs">
+<div class="tab active" id="tab-equip" onclick="window.setMode('equip')">장비별</div>
+<div class="tab" id="tab-location" onclick="window.setMode('location')">팀별</div>
+<div class="tab" id="tab-date" onclick="window.setMode('date')">날짜별</div>
+</div>
+
+<div id="searchBox" class="box"></div>
+<div id="results"></div>
+</div>
+
+<div class="modal" id="bulkModal">
+<div class="modal-content">
+<div class="modal-header"><h2>수령/반납</h2><span class="modal-close" onclick="window.closeModal('bulkModal')">×</span></div>
+<div class="form-group"><label>상태</label><select id="bulkType"><option value="수령">수령</option><option value="반납">반납</option><option value="수령예정">수령예정</option><option value="보유">보유</option></select></div>
+<div class="form-group"><label>팀/위치</label><select id="bulkTeam"><option value="1팀">1팀</option><option value="2팀">2팀</option><option value="3팀">3팀</option><option value="4팀">4팀</option><option value="5팀">5팀</option><option value="6팀">6팀</option><option value="평택">평택</option><option value="수원">수원</option><option value="아산1">아산1</option><option value="사무실">사무실</option><option value="센터">센터</option><option value="의공실">의공실</option></select></div>
+<div class="form-group hidden" id="returnGroup"><label>반납사유</label><select id="returnReason"><option value="팀해체">팀해체</option><option value="의공실">의공실</option><option value="장비점검">장비점검</option><option value="기타">기타</option></select></div>
+<div class="form-group hidden" id="customGroup"><label>사유입력</label><input type="text" id="customReason"></div>
+<div class="form-group"><label>관리자</label><input type="text" id="bulkManager"></div>
+<div class="form-group"><label>특이사항</label><textarea id="bulkMemo">특이사항 없음</textarea></div>
+<div class="form-group"><label>날짜</label><input type="date" id="bulkDate"></div>
+<div class="modal-buttons"><button class="btn-primary" onclick="window.submitBulk()">등록</button><button class="btn-secondary" onclick="window.closeModal('bulkModal')">취소</button></div>
+</div>
+</div>
+
+<div class="modal" id="editModal">
+<div class="modal-content">
+<div class="modal-header"><h2>정보수정</h2><span class="modal-close" onclick="window.closeModal('editModal')">×</span></div>
+<div class="form-group"><label>사번</label><input type="text" id="editId" disabled></div>
+<div class="form-group"><label>이름</label><input type="text" id="editName" disabled></div>
+<div class="form-group"><label>팀</label><select id="editTeam"><option value="1팀">1팀</option><option value="2팀">2팀</option><option value="3팀">3팀</option><option value="4팀">4팀</option><option value="5팀">5팀</option><option value="6팀">6팀</option><option value="평택">평택</option><option value="수원">수원</option><option value="아산1">아산1</option><option value="사무실">사무실</option><option value="센터">센터</option><option value="의공실">의공실</option></select></div>
+<div class="modal-buttons"><button class="btn-primary" onclick="window.saveEdit()">저장</button><button class="btn-secondary" onclick="window.closeModal('editModal')">취소</button></div>
+</div>
+</div>
+
+<script>
+const API='https://script.google.com/macros/s/AKfycbzVpPDKZwsZvapVZ-mXTdspbRhoRSA5KdQnNRMUSs8tSh_F-fpjiDF4HMEYfx4PJNxa/exec';
+const SHEET_ID='1qWL923DKQ8MI4Iw2A2Xn7izm7wftpBCEfVvgitlhln0';
+const SHEETS={'청력기':'1720829217','청력부스':'783939503','중이기기':'951007328','소음계':'389015843','원심분리기':'1430550353','HRV':'575182905','EKG':'37674733','폐활량':'2106009043','실린지':'829162327','프린터기':'283353512','업무용노트북':'239338022','와이브로':'763688386','포터블모니터':'1994479091'};
+const LUNG_ASSET_MAPPING={'50601-00770':{model:'NT300E5K-K34S',sn:'0N8V91IHB00202E'},'50601-00771':{model:'NT270E5R-KD1S',sn:'JKGK91KFC00009R'},'50601-00772':{model:'NT270E5R-KD1S',sn:'JKGK91KFC00410Y'},'50601-00773':{model:'NT270E5R-KD1S',sn:'JKGK91KFC00281R'},'50601-00774':{model:'NT300E5K-L26W',sn:'0QP191IU100958E'},'50601-00775':{model:'NT300E5X-AD2S',sn:'HxX391RD100005B'},'50601-00776':{model:'NT300E5C-A39S',sn:'JkMM91DF300107K'},'50601-00822':{model:'NT300E5K-K34S',sn:'0N8V91IHB00226K'},'50601-00823':{model:'NT300E5R-KD3A',sn:'OUMN91JJC00115M'},'50601-00863':{model:'NT300E5K-L26W',sn:'0QP191IU201075D'},'50601-00864':{model:'NT300E5K-L26W',sn:'0QP191IJ200766K'},'50601-00871':{model:'NT550EAZ-AD2A',sn:'0WGE91AKC00159Y'},'50601-00872':{model:'NT300E5R-KD3A',sn:'0UMN91CJC00017V'},'50601-00873':{model:'NT300E5X-AD2S',sn:'HxX391PD100015E'},'50601-00949':{model:'NT550EAZ-AD2A',sn:'0WGE91AKC00012H'},'50601-00950':{model:'NT270E5R-KD1S',sn:'JKGK91KFC00319X'},'50601-00951':{model:'NT270E5R-KD1S',sn:'JKGK91KFC00086Z'},'50601-00964':{model:'NT300E5K-L26W',sn:'0QP191GJ100332Z'},'50601-00965':{model:'NT300E5K-L26W',sn:'0QP191AJ101068A'},'50601-00966':{model:'NT550EAZ-AD2A',sn:'0WGE91AK800199N'},'50601-00967':{model:'NT550EAZ-AD2A',sn:'0WGE91AKC00042E'},'50601-00968':{model:'NT550EAZ-AD2A',sn:'0WGE91AK900074X'},'50601-00969':{model:'NT550EAZ-AD2A',sn:'0WGE91AKC00039D'},'50601-01533':{model:'DM501TGA',sn:'KYTK99YXA0000RZ'},'50601-01534':{model:'DM501TGA',sn:'KYTK99YXA0000BW'},'50601-01535':{model:'DM501TGA',sn:'KYTN99YX90003AH'},'50601-01536':{model:'DM501TGA',sn:'KYTN99YX900034K'},'50601-01537':{model:'NT551XED',sn:'67A29FCX100009Y'},'50601-01538':{model:'NT551XED',sn:'67A29FCX100008J'},'50601-01539':{model:'NT551XED',sn:'67A29FCX100025N'},'50601-01632':{model:'DM501TGA',sn:'L0MM99YY7000ABV'},'50601-01633':{model:'DM501TGA',sn:'L0MM99YY7000JRJ'},'50601-01634':{model:'DM501TGA',sn:'L0MM99YY7000A0X'},'50601-01635':{model:'DM501TGA',sn:'L0MM99YY7000CGF'},'50601-01636':{model:'NT751XGK-K03/C',sn:'KYPD99YY90003P'},'50601-01637':{model:'NT751XGK-K03/C',sn:'KYPD99YY90005F'},'50601-01638':{model:'NT751XGK-K03/C',sn:'KYPD99YY900006'},'50601-01639':{model:'NT751XGK-K03/C',sn:'KYPD99YY90003S'}};
+const AUDIOMETER_HEADSET_MAPPING={'50604-00152':'WT109429/WT109430','50604-00153':'WT109528/WT109536','50604-00181':'WT305446/WT305444','50604-00194':'WT402572/WT402584','50604-00195':'WT402783/WT402588','50604-00196':'WT402782/WT402781','50604-00211':'WT482942/WT482966','50604-00212':'WT476053/WT498521','50604-00221':'WT565596/WT558124','50604-00222':'WT550841/WT567270','50604-00233':'WT662399/WT638008','50604-00234':'WT694207/WT699298'};
+const FIXED_LOCATIONS=['1','2','3','4','5','6','평택','수원','아산1','사무실','의공실','센터','미선택'];
+const IGNORE_TEXT=["특이사항없음","특이사항 없음","이상없음","이상 없음"];
+window.G={user:null,all:[],mode:'equip',currentYear:2026,currentMonth:1};
+
+window.doLogin=function(){
+const id=document.getElementById('loginId').value.trim();
+const name=document.getElementById('loginName').value.trim();
+const pw=document.getElementById('loginPw').value.trim();
+if(!id||!name||!pw){alert('모두 입력하세요');return}
+window.G.user={id:id,name:name,team:'5팀'};
+localStorage.setItem('equipUser',JSON.stringify(window.G.user));
+document.getElementById('loginScreen').style.display='none';
+document.getElementById('mainScreen').style.display='block';
+document.getElementById('userInfo').textContent=window.G.user.name;
+window.load();
+};
+
+window.doLogout=function(){window.G.user=null;localStorage.removeItem('equipUser');document.getElementById('mainScreen').style.display='none';document.getElementById('loginScreen').style.display='flex'};
+
+window.load=async function(){
+window.G.all=[];
+document.getElementById('status').innerText='로딩중...';
+for(const [name,gid] of Object.entries(SHEETS)){
+try{
+const url='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/export?format=csv&gid='+gid;
+const res=await fetch(url,{cache:'no-store'});
+const csv=await res.text();
+const parsed=Papa.parse(csv.trim(),{header:true,skipEmptyLines:true});
+parsed.data.forEach(row=>{
+const assetNum=row['자산번호']||row['자산 번호']||'';
+if(assetNum&&assetNum.trim()){
+window.G.all.push({...row,_equip:name});
+}
+});
+}catch(e){console.error(name,e)}
+}
+document.getElementById('status').innerText=window.G.all.length+'개 장비';
+window.show();
+};
+
+function isRealIssue(text){
+if(!text||!text.trim())return false;
+const clean=text.replace(/\s/g,"").toLowerCase();
+for(const ig of IGNORE_TEXT){
+const cleanIgnore=ig.replace(/\s/g,"").toLowerCase();
+if(clean===cleanIgnore||clean.includes(cleanIgnore))return false;
+}
+return true;
+}
+
+function parseCurrentLocation(row){
+const val=row['현재위치']||row['현재 위치']||'';
+if(!val||!val.trim())return{location:"미선택",date:null};
+const str=val.toString().trim();
+const dateMatch=str.match(/\((\d{1,2})\/(\d{1,2})\)/);
+const date=dateMatch?dateMatch[1].padStart(2,'0')+'/'+dateMatch[2].padStart(2,'0'):null;
+const cleanStr=str.replace(/\(.*?\)/g,'').trim();
+let location="미선택";
+if(cleanStr.includes('아산1'))location='아산1';
+else if(cleanStr.includes('평택'))location='평택';
+else if(cleanStr.includes('수원'))location='수원';
+else if(cleanStr.includes('사무실'))location='사무실';
+else if(cleanStr.includes('센터'))location='센터';
+else if(cleanStr.includes('의공실'))location='의공실';
+else{
+const match=cleanStr.match(/(?:^|[^\d])([1-6])(?:팀|[^\d]|$)/);
+if(match)location=match[1];
+}
+return{location,date};
+}
+
+function getDetailByDate(row,targetDate){
+if(!targetDate)return null;
+const dateKeys=Object.keys(row).filter(k=>k.match(/^\d{1,2}[\/\-]\d{1,2}$/));
+for(const key of dateKeys){
+const normalized=key.trim().replace('-','/').split('/').map(p=>p.padStart(2,'0')).join('/');
+if(normalized===targetDate&&row[key]&&row[key].trim()){
+return row[key].trim();
+}
+}
+return null;
+}
+
+window.setMode=function(m){
+window.G.mode=m;
+document.getElementById('tab-equip').classList.toggle('active',m==='equip');
+document.getElementById('tab-location').classList.toggle('active',m==='location');
+document.getElementById('tab-date').classList.toggle('active',m==='date');
+window.show();
+};
+
+window.show=function(){
+const b=document.getElementById('searchBox');
+document.getElementById('results').innerHTML='';
+if(window.G.mode==='equip'){
+const equipCounts={};
+Object.keys(SHEETS).forEach(name=>{
+equipCounts[name]=window.G.all.filter(r=>r._equip===name).length;
+});
+b.innerHTML='<label>장비 선택</label><select id="es" onchange="window.updateLocations()"><option value="">선택</option>'+Object.keys(SHEETS).map(e=>'<option value="'+e+'">'+e+' ('+equipCounts[e]+'개)</option>').join('')+'</select><div id="lb" style="display:none"><label>장소 필터</label><select id="ls" onchange="window.displayResults()"><option value="">장소 선택</option></select></div>';
+}else if(window.G.mode==='location'){
+const locationCounts={};
+FIXED_LOCATIONS.forEach(loc=>{
+locationCounts[loc]=window.G.all.filter(r=>parseCurrentLocation(r).location===loc).length;
+});
+b.innerHTML='<label>팀 선택</label><select id="locationSelect" onchange="window.displayLocationResults()"><option value="">선택</option>'+FIXED_LOCATIONS.map(l=>'<option value="'+l+'">'+(/^[1-6]$/.test(l)?l+'팀':l)+' ('+locationCounts[l]+'개)</option>').join('')+'</select>';
+}else{
+window.showCalendar();
+}
+};
+
+window.updateLocations=function(){
+const eq=document.getElementById('es').value;
+if(!eq){
+document.getElementById('lb').style.display='none';
+document.getElementById('results').innerHTML='';
+return;
+}
+let totalEquipCount=0;
+const locationCounts={};
+FIXED_LOCATIONS.forEach(loc=>{
+const count=window.G.all.filter(r=>r._equip===eq&&parseCurrentLocation(r).location===loc).length;
+locationCounts[loc]=count;
+totalEquipCount+=count;
+});
+document.getElementById('ls').innerHTML='<option value="">장소 선택</option><option value="전체">전체 ('+totalEquipCount+'개)</option>'+FIXED_LOCATIONS.map(l=>'<option value="'+l+'">'+(/^[1-6]$/.test(l)?l+'팀':l)+' ('+locationCounts[l]+'개)</option>').join('');
+document.getElementById('lb').style.display='block';
+document.getElementById('results').innerHTML='';
+};
+
+window.displayResults=function(){
+const eq=document.getElementById('es').value;
+const loc=document.getElementById('ls').value;
+if(!loc){
+document.getElementById('results').innerHTML='<p style="padding:20px;text-align:center;color:#999;">장소를 선택해주세요</p>';
+return;
+}
+let found;
+if(loc==='전체'){
+found=window.G.all.filter(r=>r._equip===eq);
+}else{
+found=window.G.all.filter(r=>r._equip===eq&&parseCurrentLocation(r).location===loc);
+}
+if(found.length===0){
+document.getElementById('results').innerHTML='<p style="padding:20px;text-align:center;color:#999;">해당 장소에 장비가 없습니다</p>';
+return;
+}
+let html='<div class="button-group"><div><button class="select-all-btn" onclick="window.selectAllEquipment(true)">✓ 전체선택</button><button class="select-all-btn" onclick="window.selectAllEquipment(false)">✗ 전체해제</button></div><button class="send-email-btn" onclick="window.showBulkModal()">수령/반납</button></div>';
+html+=found.map(r=>{
+const data=parseCurrentLocation(r);
+const locName=/^[1-6]$/.test(data.location)?data.location+'팀':data.location;
+const assetNum=r['자산번호']||r['자산 번호']||'';
+const detail=data.date?getDetailByDate(r,data.date):null;
+const hasIssue=detail&&isRealIssue(detail);
+const cardClass=hasIssue?'card issue':'card';
+const noteClass=hasIssue?'card-note':'card-note normal';
+let modelName=r['모델']||'';
+let serialNum=r['제조번호']||r['제조 번호']||'';
+if(r._equip==='폐활량'&&LUNG_ASSET_MAPPING[assetNum]){
+modelName=LUNG_ASSET_MAPPING[assetNum].model;
+serialNum=LUNG_ASSET_MAPPING[assetNum].sn;
+}
+const modelInfo=(modelName||serialNum)?' (모델: '+modelName+', S/N: '+serialNum+')':'';
+const headsetInfo=(r._equip==='청력기'&&AUDIOMETER_HEADSET_MAPPING[assetNum])?' (헤드셋: '+AUDIOMETER_HEADSET_MAPPING[assetNum]+')':'';
+const equipData=JSON.stringify({
+'자산번호':assetNum,
+'_equip':r._equip
+}).replace(/'/g,'&apos;');
+return '<div class="'+cardClass+'"><input type="checkbox" class="equipment-checkbox" data-equipment=\''+equipData+'\' checked><div style="flex:1"><div class="card-title">'+locName+' / '+r._equip+' / '+assetNum+modelInfo+headsetInfo+'</div>'+(detail?'<div class="'+noteClass+'">'+detail+'</div>':'')+'</div></div>';
+}).join('');
+document.getElementById('results').innerHTML=html;
+};
+
+window.displayLocationResults=function(){
+const loc=document.getElementById('locationSelect').value;
+if(!loc){
+document.getElementById('results').innerHTML='';
+return;
+}
+let found=window.G.all.filter(r=>parseCurrentLocation(r).location===loc);
+if(found.length===0){
+document.getElementById('results').innerHTML='<p style="padding:20px;text-align:center;color:#999;">해당 장소에 장비가 없습니다</p>';
+return;
+}
+let html='<div class="button-group"><div><button class="select-all-btn" onclick="window.selectAllEquipment(true)">✓ 전체선택</button><button class="select-all-btn" onclick="window.selectAllEquipment(false)">✗ 전체해제</button></div><button class="send-email-btn" onclick="window.showBulkModal()">수령/반납</button></div>';
+html+=found.map(r=>{
+const data=parseCurrentLocation(r);
+const locName=/^[1-6]$/.test(data.location)?data.location+'팀':data.location;
+const assetNum=r['자산번호']||r['자산 번호']||'';
+const detail=data.date?getDetailByDate(r,data.date):null;
+const hasIssue=detail&&isRealIssue(detail);
+const cardClass=hasIssue?'card issue':'card';
+const noteClass=hasIssue?'card-note':'card-note normal';
+let modelName=r['모델']||'';
+let serialNum=r['제조번호']||r['제조 번호']||'';
+if(r._equip==='폐활량'&&LUNG_ASSET_MAPPING[assetNum]){
+modelName=LUNG_ASSET_MAPPING[assetNum].model;
+serialNum=LUNG_ASSET_MAPPING[assetNum].sn;
+}
+const modelInfo=(modelName||serialNum)?' (모델: '+modelName+', S/N: '+serialNum+')':'';
+const headsetInfo=(r._equip==='청력기'&&AUDIOMETER_HEADSET_MAPPING[assetNum])?' (헤드셋: '+AUDIOMETER_HEADSET_MAPPING[assetNum]+')':'';
+const equipData=JSON.stringify({
+'자산번호':assetNum,
+'_equip':r._equip
+}).replace(/'/g,'&apos;');
+return '<div class="'+cardClass+'"><input type="checkbox" class="equipment-checkbox" data-equipment=\''+equipData+'\' checked><div style="flex:1"><div class="card-title">'+locName+' / '+r._equip+' / '+assetNum+modelInfo+headsetInfo+'</div>'+(detail?'<div class="'+noteClass+'">'+detail+'</div>':'')+'</div></div>';
+}).join('');
+document.getElementById('results').innerHTML=html;
+};
+
+window.selectAllEquipment=function(checked){
+document.querySelectorAll('.equipment-checkbox').forEach(cb=>cb.checked=checked);
+};
+
+window.showBulkModal=function(){
+const checked=document.querySelectorAll('.equipment-checkbox:checked');
+if(checked.length===0){alert('선택된 장비가 없습니다');return}
+document.getElementById('bulkTeam').value=window.G.user.team;
+document.getElementById('bulkManager').value=window.G.user.name;
+document.getElementById('returnGroup').classList.toggle('hidden',document.getElementById('bulkType').value!=='반납');
+document.getElementById('bulkModal').classList.add('active');
+};
+
+window.toggleReturn=function(){
+const r=document.getElementById('bulkType').value==='반납';
+document.getElementById('returnGroup').classList.toggle('hidden',!r);
+if(!r)document.getElementById('customGroup').classList.add('hidden');
+};
+
+window.toggleCustom=function(){
+const c=document.getElementById('returnReason').value==='기타';
+document.getElementById('customGroup').classList.toggle('hidden',!c);
+};
+
+window.closeModal=function(id){
+document.getElementById(id).classList.remove('active');
+};
+
+window.submitBulk=async function(){
+const checked=document.querySelectorAll('.equipment-checkbox:checked');
+if(checked.length===0){alert('선택된 장비가 없습니다');return}
+const type=document.getElementById('bulkType').value;
+const team=document.getElementById('bulkTeam').value;
+const mgr=document.getElementById('bulkManager').value.trim();
+const memo=document.getElementById('bulkMemo').value.trim();
+const date=document.getElementById('bulkDate').value;
+let reason='';
+if(type==='반납'){
+reason=document.getElementById('returnReason').value;
+if(reason==='기타')reason=document.getElementById('customReason').value.trim();
+if(!reason){alert('반납사유 입력');return}
+}
+if(!team||!mgr||!memo||!date){alert('모두 입력');return}
+document.getElementById('loading').classList.add('active');
+try{
+for(const cb of checked){
+const equipData=JSON.parse(cb.getAttribute('data-equipment').replace(/&apos;/g,"'"));
+const url=API+'?equipment='+encodeURIComponent(equipData._equip)+'&assetNo='+encodeURIComponent(equipData.자산번호)+'&team='+encodeURIComponent(team)+'&status='+encodeURIComponent(type)+'&manager='+encodeURIComponent(mgr)+'&memo='+encodeURIComponent(memo)+'&returnReason='+encodeURIComponent(reason)+'&date='+date;
+await fetch(url);
+}
+alert('등록완료');
+window.closeModal('bulkModal');
+await window.load();
+}catch(e){
+alert('실패:'+e.message);
+}finally{
+document.getElementById('loading').classList.remove('active');
+}
+};
+
+window.showCalendar=function(){
+const b=document.getElementById('searchBox');
+const dateEquipments={};
+window.G.all.forEach(r=>{
+const data=parseCurrentLocation(r);
+if(data.date){
+const detail=getDetailByDate(r,data.date);
+if(detail&&isRealIssue(detail)){
+if(!dateEquipments[data.date]){
+dateEquipments[data.date]=new Set();
+}
+dateEquipments[data.date].add(r._equip);
+}
+}
+});
+const firstDay=new Date(window.G.currentYear,window.G.currentMonth-1,1).getDay();
+const lastDate=new Date(window.G.currentYear,window.G.currentMonth,0).getDate();
+let html='<div class="month-nav"><button onclick="window.moveMonth(-1)">◀</button><b>'+window.G.currentYear+'년 '+window.G.currentMonth+'월</b><button onclick="window.moveMonth(1)">▶</button></div><div class="calendar">';
+['일','월','화','수','목','금','토'].forEach(d=>{html+='<div class="cal-header">'+d+'</div>'});
+for(let i=0;i<firstDay;i++)html+='<div></div>';
+for(let d=1;d<=lastDate;d++){
+const dateStr=String(window.G.currentMonth).padStart(2,'0')+'/'+String(d).padStart(2,'0');
+const equipSet=dateEquipments[dateStr];
+const equipList=equipSet?Array.from(equipSet):[];
+const hasIssue=equipList.length>0;
+let dayContent=d;
+if(hasIssue){
+dayContent+='<div style="font-size:10px;margin-top:4px;line-height:1.3;">';
+equipList.forEach(eq=>{
+dayContent+='<div style="font-weight:bold;">'+eq+'</div>';
+});
+dayContent+='</div>';
+}
+html+='<div class="cal-day'+(hasIssue?' issue':'')+'" onclick="window.selectDate(\''+dateStr+'\',this)">'+dayContent+'</div>';
+}
+html+='</div><div id="dateRes"></div>';
+b.innerHTML=html;
+};
+
+window.moveMonth=function(direction){
+window.G.currentMonth+=direction;
+if(window.G.currentMonth>12){window.G.currentMonth=1;window.G.currentYear++}
+else if(window.G.currentMonth<1){window.G.currentMonth=12;window.G.currentYear--}
+window.showCalendar();
+};
+
+window.selectDate=function(dateStr,element){
+document.querySelectorAll('.cal-day').forEach(x=>x.classList.remove('selected'));
+element.classList.add('selected');
+const found=window.G.all.filter(r=>{
+const data=parseCurrentLocation(r);
+if(data.date!==dateStr)return false;
+const detail=getDetailByDate(r,data.date);
+return detail&&isRealIssue(detail);
+});
+if(found.length===0){
+document.getElementById('dateRes').innerHTML='<p style="padding:20px;text-align:center;">특이사항 없음</p>';
+return;
+}
+document.getElementById('dateRes').innerHTML=found.map(r=>{
+const data=parseCurrentLocation(r);
+const locName=/^[1-6]$/.test(data.location)?data.location+'팀':data.location;
+const assetNum=r['자산번호']||r['자산 번호']||'';
+const detail=getDetailByDate(r,data.date);
+return '<div class="card issue"><div class="card-title">'+locName+' / '+r._equip+' / '+assetNum+'</div><div class="card-note">'+detail+'</div></div>';
+}).join('');
+};
+
+window.showEdit=function(){
+document.getElementById('editId').value=window.G.user.id;
+document.getElementById('editName').value=window.G.user.name;
+document.getElementById('editTeam').value=window.G.user.team;
+document.getElementById('editModal').classList.add('active');
+};
+
+window.saveEdit=function(){
+window.G.user.team=document.getElementById('editTeam').value;
+localStorage.setItem('equipUser',JSON.stringify(window.G.user));
+document.getElementById('userInfo').textContent=window.G.user.name;
+alert('수정완료');
+window.closeModal('editModal');
+};
+
+document.getElementById('bulkDate').valueAsDate=new Date();
+document.getElementById('bulkType').addEventListener('change',window.toggleReturn);
+document.getElementById('returnReason').addEventListener('change',window.toggleCustom);
+const saved=localStorage.getItem('equipUser');
+if(saved){
+window.G.user=JSON.parse(saved);
+document.getElementById('loginScreen').style.display='none';
+document.getElementById('mainScreen').style.display='block';
+document.getElementById('userInfo').textContent=window.G.user.name;
+window.load();
+}
+</script>
+</body>
+</html>
